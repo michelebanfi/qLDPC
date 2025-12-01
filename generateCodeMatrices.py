@@ -43,7 +43,18 @@ codes = [
 for code in codes:
     Hx = code["code"].matrix_x
     Hz = code["code"].matrix_z
-    np.savez(f'codes/{code["name"]}.npz', Hx=np.array(Hx), Hz=np.array(Hz))
+    
+    logicals = code['code'].get_logical_ops()
+    
+    k = logicals.shape[0] // 2
+    n = Hx.shape[1]
+    
+    Lx = logicals[:k, :n]
+    Lz = logicals[k:, n:]    
+    
+    print(f"logicals shape: {logicals.shape}, Hx shape: {Hx.shape}, Lx shape: {Lx.shape}")
+
+    np.savez(f'codes/{code["name"]}.npz', Hx=np.array(Hx), Hz=np.array(Hz), Lx=np.array(Lx), Lz=np.array(Lz))
 
 H = [
     [1, 0, 1, 0, 1, 0, 1],
