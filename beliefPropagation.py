@@ -2,7 +2,7 @@ import numpy as np
 
 from drawUtils import plotGraph
     
-def performBeliefPropagation(H, error, initialBelief, plotPath=None):
+def performBeliefPropagation(H, error, initialBelief, verbose = True, plotPath=None):
 
     H = np.array(H, dtype=float)
 
@@ -20,7 +20,7 @@ def performBeliefPropagation(H, error, initialBelief, plotPath=None):
     H_T = H.T
 
     syndrome = (error @ H_T) % 2
-    print(f"Initial syndrome: {syndrome}")
+    if verbose: print(f"Initial syndrome: {syndrome}")
 
     for varNode in range(len(H_T)):
         temp = []
@@ -80,7 +80,7 @@ def performBeliefPropagation(H, error, initialBelief, plotPath=None):
         
         if np.array_equal(calculateSyndrome, syndrome): 
             isSindromefound = True
-            print(f"Error found at iteration {currentIter}: {candidateError}")
+            if verbose: print(f"Error found at iteration {currentIter}: {candidateError}")
         
         
         currentIter += 1
