@@ -13,8 +13,9 @@ codes = [
     "[[288, 12, 18]]",
 ]
 
-trials = 10000
-physicalErrorRates = [0.01, 0.005, 0.001, 0.0005, 0.0001]
+#trials = 50000
+trials = 1000
+physicalErrorRates = np.logspace(-3, -1.3, 8)
 results = {}
 for code in tqdm.tqdm(codes):
     oc = np.load(f'codes/{code}.npz')
@@ -39,6 +40,7 @@ for code in tqdm.tqdm(codes):
             if not isSyndromeFound:
                 logical_error += 1
             else:
+                # This is the XOR, between the actual error and the detected error. We are simulating the correction of the error
                 residual = (detection + error) % 2
                 
                 syndromeLogic = (Lx @ residual) % 2

@@ -85,4 +85,4 @@ def performBeliefPropagation(H, error, initialBelief, verbose = True, plotPath=N
         
         currentIter += 1
         
-    return candidateError, isSindromefound
+    return candidateError, isSindromefound, values
