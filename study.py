@@ -13,9 +13,8 @@ codes = [
     "[[288, 12, 18]]",
 ]
 
-#trials = 50000
-trials = 1000
-physicalErrorRates = np.logspace(-3, -1.3, 8)
+trials = 50000
+physicalErrorRates = np.logspace(-3.2, -1.3, 8)
 results = {}
 for code in tqdm.tqdm(codes):
     oc = np.load(f'codes/{code}.npz')
@@ -35,7 +34,7 @@ for code in tqdm.tqdm(codes):
             # non-trivial pythonic way to generate random bitstring with given error rate
             error = (np.random.random(n) < errorRate).astype(int)
             
-            detection, isSyndromeFound = performBeliefPropagation(code, error, initialBeliefs, verbose=False)
+            detection, isSyndromeFound, _ = performBeliefPropagation(code, error, initialBeliefs, verbose=False)
             
             if not isSyndromeFound:
                 logical_error += 1
