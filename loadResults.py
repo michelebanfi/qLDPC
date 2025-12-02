@@ -14,9 +14,8 @@ print(res)
 
 plt.figure(figsize=(10,6))
 for item in res:
-    plt.plot(PER, res[item], label=item, marker='o')
+    plt.plot(PER, res[item]['ler'], label=item, marker='o')
     plt.xscale('log')
-    # plt.yscale('log')
     plt.legend()
     plt.grid(True)
     print(res[item])
