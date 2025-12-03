@@ -44,7 +44,7 @@ for code in tqdm.tqdm(codes):
             # non-trivial pythonic way to generate random bitstring with given error rate
             error = (np.random.random(n) < errorRate).astype(int)
             
-            #### PHENOMENOLOGICAL ERROR MODEL ####
+            #### SIMPLE PHENOMENOLOGICAL ERROR MODEL ####
             syndrome = (error @ code.T) % 2
             measurementError = (np.random.random(len(syndrome)) < errorRate).astype(int)
             noisy_syndrome = (syndrome + measurementError) % 2
