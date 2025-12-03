@@ -23,6 +23,6 @@ error[1] = 1
 
 print(f"Error introduced: {error}")
 
-detection, isSyndromeFound = performBeliefPropagation(H, error, initialBelief)
+detection, isSyndromeFound, _ = performBeliefPropagation(H, error, initialBelief)
 
 print(detection, isSyndromeFound)
