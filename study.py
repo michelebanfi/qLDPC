@@ -13,7 +13,7 @@ codes = [
     "[[288, 12, 18]]",
 ]
 
-trials = 100
+trials = 50000
 physicalErrorRates = np.logspace(-3.2, -1.3, 8)
 results = {}
 for code in tqdm.tqdm(codes):
