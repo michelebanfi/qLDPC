@@ -11,7 +11,7 @@ def performOSD(H, syndrome, llr, hard):
     ordering = np.argsort(llr)
     H_permuted = H[:, ordering]
     
-    H_reduced, s_reduced, pivots = gf2_elimination(H_permuted, residual_syndrome)
+    _, s_reduced, pivots = gf2_elimination(H_permuted, residual_syndrome)
     
     e_permuted = np.zeros(n, dtype=int)
     
