@@ -1,6 +1,7 @@
 import numpy as np
 
-from beliefPropagation import performBeliefPropagation
+from decoding.beliefPropagation import performBeliefPropagation
+from decoding.OSD import performOSD
 from drawUtils import plotMatrix
 
 path = "steane"
@@ -23,6 +24,10 @@ error[1] = 1
 
 print(f"Error introduced: {error}")
 
-detection, isSyndromeFound, _ = performBeliefPropagation(H, error, initialBelief)
+syndrome = (error @ H.T) % 2
 
-print(detection, isSyndromeFound)
+detection, isSyndromeFound, llrs = performBeliefPropagation(H, syndrome, initialBelief)
+
+solution = performOSD(H, syndrome, llrs, detection)
+print(solution)
+# print(detection, isSyndromeFound)

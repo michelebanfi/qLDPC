@@ -2,7 +2,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 import tqdm
 
-from beliefPropagation import performBeliefPropagation
+from decoding.beliefPropagation import performBeliefPropagation
+from decoding.OSD import performOSD
 
 
 codes = [
@@ -13,9 +14,12 @@ codes = [
     "[[288, 12, 18]]",
 ]
 
-trials = 100
+trials = 10
 physicalErrorRates = np.logspace(-3.2, -1.3, 8)
 results = {}
+
+np.random.seed(0)
+
 for code in tqdm.tqdm(codes):
     oc = np.load(f'codes/{code}.npz')
     name = code
@@ -28,6 +32,7 @@ for code in tqdm.tqdm(codes):
     BPs_fault_rates = []
     BPs_miscorrected_rates = []
     incorrectable_rates = []
+    degeneracies = []
     
     for errorRate in physicalErrorRates:
         
@@ -36,6 +41,7 @@ for code in tqdm.tqdm(codes):
         BPs_fault = 0
         BPs_miscorrected = 0
         incorrectable = 0
+        degenerateErrors = 0
         
         
         for _ in range(trials):
@@ -44,43 +50,52 @@ for code in tqdm.tqdm(codes):
             # non-trivial pythonic way to generate random bitstring with given error rate
             error = (np.random.random(n) < errorRate).astype(int)
             
-            #### SIMPLE PHENOMENOLOGICAL ERROR MODEL ####
             syndrome = (error @ code.T) % 2
-            measurementError = (np.random.random(len(syndrome)) < errorRate).astype(int)
-            noisy_syndrome = (syndrome + measurementError) % 2
             
-            detection, isSyndromeFound, _ = performBeliefPropagation(code, noisy_syndrome, initialBeliefs, verbose=False)
+            #### SIMPLE PHENOMENOLOGICAL ERROR MODEL ####
+            # measurementError = (np.random.random(len(syndrome)) < errorRate).astype(int)
+            # syndrome = (syndrome + measurementError) % 2
+            
+            detection, isSyndromeFound, llrs = performBeliefPropagation(code, syndrome, initialBeliefs, verbose=False)
             
             if not isSyndromeFound:
-                logical_error += 1
-                BPs_fault += 1
-            else:
-                # This is the XOR, between the actual error and the detected error. We are simulating the correction of the error
-                residual = (detection + error) % 2
+                # logical_error += 1
+                # BPs_fault += 1
                 
-                syndromeLogic = (Lx @ residual) % 2
+                detection = performOSD(code, syndrome, llrs, detection)
                 
-                if np.any(syndromeLogic):
-                    logical_error += 1
+                
 
-                    error_weight = np.sum(error)
-                    if error_weight < (distance // 2):
-                        BPs_miscorrected += 1
-                    else:
-                        incorrectable += 1
-                    
-                
+            # This is the XOR, between the actual error and the detected error. We are simulating the correction of the error
+            residual = (detection + error) % 2
+            
+            syndromeLogic = (Lx @ residual) % 2
+            
+            if not np.any(syndromeLogic) and np.array_equal(detection, error) == False:
+                degenerateErrors += 1
+            
+            if np.any(syndromeLogic):
+                logical_error += 1
+
+                error_weight = np.sum(error)
+                if error_weight < (distance // 2):
+                    BPs_miscorrected += 1
+                else:
+                    incorrectable += 1
+                                    
         
         ler = logical_error / trials
         logicalErrorRates.append(ler)
         BPs_fault_rates.append(BPs_fault)
         BPs_miscorrected_rates.append(BPs_miscorrected)
         incorrectable_rates.append(incorrectable)
+        degeneracies.append(degenerateErrors)
         
     results[name]['ler'] = logicalErrorRates
     results[name]['BPs_fault'] = BPs_fault_rates
     results[name]['BPs_miscorrected'] = BPs_miscorrected_rates
     results[name]['incorrectable'] = incorrectable_rates
+    results[name]['degeneracies'] = degeneracies
     
     
 # dump results to file for safekeeping
@@ -91,10 +106,18 @@ for name in results:
     plt.plot(physicalErrorRates, results[name]['ler'], label=name, marker='o')
     plt.grid(True)
     plt.xscale('log')
+    plt.yscale('log')
     plt.xlabel('Physical error rate')
     plt.ylabel('Logical error rate')
     plt.legend()
 plt.savefig("media/LERS")
+
+plt.figure(figsize=(10, 6))
+for name in results:
+    plt.plot(physicalErrorRates, results[name]['degeneracies'], label=name, marker='o')
+    plt.grid(True)
+    plt.legend()
+plt.savefig("media/degeneracies")
 
 # grouped stacked bars: components = BPs_fault, BPs_miscorrected, incorrectable
 names = codes  # preserve the original order used to build `results`

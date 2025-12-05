@@ -41,7 +41,7 @@ def performBeliefPropagation(H, syndrome, initialBelief, verbose = True, plotPat
                 R[checkNode][varNode] = initialBelief[varNode]
 
     isSindromefound = False
-    maxIter = 30 # TODO: aumentare iter
+    maxIter = 50
     currentIter = 0
     while not isSindromefound and currentIter < maxIter:
         
