@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import tqdm
 
-from beliefPropagation import performBeliefPropagation
+from decoding.beliefPropagation import performBeliefPropagation
 from spaceTime import spaceTimeMatrix, spacetimeSyndrome
 
 
