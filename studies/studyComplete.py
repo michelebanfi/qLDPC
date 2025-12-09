@@ -6,7 +6,10 @@ from sympy.abc import x, y
 import matplotlib.pyplot as plt
 import tqdm
 
-from beliefPropagation import performBeliefPropagation
+import sys, pathlib
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent))
+
+from decoding.beliefPropagation import performBeliefPropagationFast
 
 codes = [
     {"code": codes.BBCode(
@@ -51,7 +54,7 @@ codes = [
     },
 ]
 
-trials = 10
+trials = 2
 results = {}
 
 physicalErrorRates = np.logspace(-3.2, -1.3, 8)
@@ -91,7 +94,7 @@ for code in tqdm.tqdm(codes):
         for i in range(trials):
             syndrome = detection_events[i]
             
-            prediction, converged, _ = performBeliefPropagation(
+            prediction, converged, _ = performBeliefPropagationFast(
                 H_spacetime, 
                 syndrome, 
                 initial_beliefs, 
