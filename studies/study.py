@@ -2,6 +2,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 import tqdm
 
+import sys, pathlib
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent))
+
 from decoding.beliefPropagation import performBeliefPropagation
 from decoding.OSD import performOSD
 
@@ -14,7 +17,7 @@ codes = [
     "[[288, 12, 18]]",
 ]
 
-trials = 10
+trials = 1000
 physicalErrorRates = np.logspace(-3.2, -1.3, 8)
 results = {}
 
