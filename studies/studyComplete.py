@@ -9,7 +9,7 @@ import tqdm
 import sys, pathlib
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent))
 
-from decoding.beliefPropagation import performBeliefPropagationFast
+from decoding.beliefPropagation import performBeliefPropagation
 
 codes = [
     {"code": codes.BBCode(
@@ -61,12 +61,13 @@ physicalErrorRates = np.logspace(-3.2, -1.3, 8)
 
 for code in tqdm.tqdm(codes):
     logicalErrorRates = []
+    num_rounds = code['distance']
+    results[code["name"]] = {}
+        
+    oc = code["code"]
     
     for p in physicalErrorRates:
-        num_rounds = code['distance']
-        results[code["name"]] = {}
         
-        oc = code["code"]
 
         noise_model = circuits.DepolarizingNoiseModel(p)
         circuit = circuits.get_memory_experiment(
@@ -79,8 +80,9 @@ for code in tqdm.tqdm(codes):
         dem = circuit.detector_error_model(decompose_errors=False) # can handle hyperedges
         matrices = detector_error_model_to_check_matrices(dem, allow_undecomposed_hyperedges=True) # transform the DEM to a matrix
 
-        H_spacetime = np.array(matrices.check_matrix.todense())
-        L_matrix = np.array(matrices.observables_matrix.todense())
+        # Keep matrices sparse for efficient BP decoding
+        H_spacetime = matrices.check_matrix
+        L_matrix = matrices.observables_matrix
         priors = matrices.priors
 
         clipped_priors = np.clip(priors, 1e-15, 1 - 1e-15)
@@ -94,14 +96,14 @@ for code in tqdm.tqdm(codes):
         for i in range(trials):
             syndrome = detection_events[i]
             
-            prediction, converged, _ = performBeliefPropagationFast(
+            prediction, converged, _ = performBeliefPropagation(
                 H_spacetime, 
                 syndrome, 
                 initial_beliefs, 
                 verbose=False
             )
             
-            predicted_logical_flip = (L_matrix @ prediction) % 2
+            predicted_logical_flip = np.asarray(L_matrix @ prediction).flatten() % 2
             
             if not np.array_equal(predicted_logical_flip, actual_observables[i]):
                 logical_errors += 1

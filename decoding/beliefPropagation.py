@@ -1,5 +1,5 @@
 import numpy as np
-from scipy.sparse import csr_matrix
+from scipy.sparse import csr_matrix, issparse
 
 from drawUtils import plotGraph
 
@@ -8,14 +8,20 @@ def performBeliefPropagation(H, syndrome, initialBelief, verbose=True, plotPath=
     Optimized min-sum belief propagation decoder.
     
     Uses sparse matrix operations and vectorized NumPy for significant speedup.
+    Accepts both dense and sparse matrices for H.
     """
-    # Convert to sparse matrix for efficient operations
-    H = np.asarray(H, dtype=np.float64)
+    # Handle sparse or dense input for H
+    if issparse(H):
+        H_sparse = csr_matrix(H)
+        num_checks, num_vars = H_sparse.shape
+    else:
+        H = np.asarray(H, dtype=np.float64)
+        num_checks, num_vars = H.shape
+        H_sparse = csr_matrix(H)
+    
     syndrome = np.asarray(syndrome, dtype=np.int8)
     initialBelief = np.asarray(initialBelief, dtype=np.float64)
     
-    num_checks, num_vars = H.shape
-    H_sparse = csr_matrix(H)
     H_T_sparse = H_sparse.T.tocsr()
     
     # Precompute adjacency lists as arrays for faster access
@@ -29,7 +35,7 @@ def performBeliefPropagation(H, syndrome, initialBelief, verbose=True, plotPath=
         print(f"Initial syndrome: {syndrome}")
     
     if plotPath is not None:
-        plotGraph(H, path=plotPath)
+        plotGraph(H_sparse.toarray() if issparse(H) else H, path=plotPath)
     
     # Initialize messages using sparse structure
     # R[c,v] and Q[c,v] only exist where H[c,v] = 1
