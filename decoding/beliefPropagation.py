@@ -4,13 +4,7 @@ from scipy.sparse import csr_matrix, issparse
 from drawUtils import plotGraph
 
 def performBeliefPropagation(H, syndrome, initialBelief, verbose=True, plotPath=None, maxIter=50):
-    """
-    Optimized min-sum belief propagation decoder.
     
-    Uses sparse matrix operations and vectorized NumPy for significant speedup.
-    Accepts both dense and sparse matrices for H.
-    """
-    # Handle sparse or dense input for H
     if issparse(H):
         H_sparse = csr_matrix(H)
         num_checks, num_vars = H_sparse.shape
@@ -24,11 +18,10 @@ def performBeliefPropagation(H, syndrome, initialBelief, verbose=True, plotPath=
     
     H_T_sparse = H_sparse.T.tocsr()
     
-    # Precompute adjacency lists as arrays for faster access
+    # permutation for performance
     check_to_var = [H_sparse.indices[H_sparse.indptr[c]:H_sparse.indptr[c+1]] for c in range(num_checks)]
     var_to_check = [H_T_sparse.indices[H_T_sparse.indptr[v]:H_T_sparse.indptr[v+1]] for v in range(num_vars)]
     
-    # Precompute syndrome signs: +1 for syndrome=0, -1 for syndrome=1
     syndrome_sign = 1 - 2 * syndrome.astype(np.float64)
     
     if verbose:
@@ -37,18 +30,13 @@ def performBeliefPropagation(H, syndrome, initialBelief, verbose=True, plotPath=
     if plotPath is not None:
         plotGraph(H_sparse.toarray() if issparse(H) else H, path=plotPath)
     
-    # Initialize messages using sparse structure
-    # R[c,v] and Q[c,v] only exist where H[c,v] = 1
-    # Store as dense arrays but only update non-zero positions
     R = np.zeros((num_checks, num_vars), dtype=np.float64)
     Q = np.zeros((num_checks, num_vars), dtype=np.float64)
     
-    # Initialize Q with initial beliefs where H is non-zero
     for v in range(num_vars):
         for c in var_to_check[v]:
             Q[c, v] = initialBelief[v]
     
-    # Precompute tanh lookup for speed (used in horizontal step)
     CLIP_VAL = 0.9999999
     
     candidateError = np.zeros(num_vars, dtype=np.int8)
@@ -60,16 +48,12 @@ def performBeliefPropagation(H, syndrome, initialBelief, verbose=True, plotPath=
             if len(vars_c) == 0:
                 continue
             
-            # Get tanh(Q/2) for all connected variables
             tanh_Q = np.tanh(Q[c, vars_c] * 0.5)
             
-            # Product of all tanh values
             prod_all = np.prod(tanh_Q)
             
-            # For each variable, divide out its contribution
-            # R[c,v] = 2 * arctanh(prod_{v' != v} tanh(Q[c,v']/2) * sign)
             with np.errstate(divide='ignore', invalid='ignore'):
-                # Avoid division by zero
+
                 tanh_Q_safe = np.where(np.abs(tanh_Q) < 1e-15, 1e-15, tanh_Q)
                 prod_others = prod_all / tanh_Q_safe
             
@@ -84,7 +68,6 @@ def performBeliefPropagation(H, syndrome, initialBelief, verbose=True, plotPath=
             R_sum = np.sum(R[checks_v, v])
             values[v] = R_sum + initialBelief[v]
             
-            # Update Q messages
             for c in checks_v:
                 Q[c, v] = values[v] - R[c, v]
         
