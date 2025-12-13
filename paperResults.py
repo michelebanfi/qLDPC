@@ -15,9 +15,9 @@ codes = [
 
 np.random.seed(0)
 
-trials = 10000
+trials = 50000
 # physicalErrorRates = np.logspace(-3.2, -1.3, 8)
-physicalErrorRates = [0.06, 0.05, 0.04, 0.03, 0.02, 0.01, 0.009]
+physicalErrorRates = [0.01, 0.006, 0.005, 0.004, 0.003, 0.002, 0.001, 0.0009]
 results_OSD = {}
 
 names = codes  # preserve the original order used to build `results`
