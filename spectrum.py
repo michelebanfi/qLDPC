@@ -17,9 +17,13 @@ trials = 20000
 np.random.seed(0)
 
 stabilizer_spectra = {} 
+OCs = []
 
 for code_name in codes:
-    oc = np.load(f'codes/{code_name}.npz')
+    OCs.append(np.load(f'codes/{code_name}.npz'))
+
+for code_name in codes:
+    oc = OCs[codes.index(code_name)]
     Hx = oc['Hx']
     Lx = oc['Lx']
     n = len(Hx[0])
@@ -54,6 +58,7 @@ if len(stabilizer_spectra) == 1:
 
 for ax, (name, weights) in zip(axes, stabilizer_spectra.items()):
     ax.hist(weights, bins=np.arange(0, 50)-0.5, alpha=0.7, label=name, density=True, edgecolor='black')
+    ax.axvline(x=OCs[codes.index(name)]['distance'], color='red', linestyle='dashed', label='Code Distance')
     ax.set_title(f'Spectrum: {name}')
     ax.set_xlabel('Weight of Stabilizer Loop (Residual Error)')
     ax.set_ylabel('Probability')
