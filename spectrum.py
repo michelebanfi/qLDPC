@@ -11,7 +11,7 @@ codes = [
     "[[144, 12, 12]]",
     "[[288, 12, 18]]",
 ]
-physicalErrorRates = [0.005] 
+physicalErrorRates = [0.01] 
 trials = 20000
 
 np.random.seed(0)
