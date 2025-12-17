@@ -15,7 +15,7 @@ codes = [
 
 np.random.seed(0)
 
-trials = 50000
+trials = 10000
 # physicalErrorRates = np.logspace(-3.2, -1.3, 8)
 physicalErrorRates = [0.01, 0.006, 0.005, 0.004, 0.003, 0.002, 0.001, 0.0009]
 results_OSD = {}
@@ -56,7 +56,9 @@ for code in tqdm.tqdm(codes):
             
             #### CODE CAPACITY ERROR MODEL ####
             # non-trivial pythonic way to generate random bitstring with given error rate
-            error = (np.random.random(n) < errorRate).astype(int)
+            error1 = (np.random.random(n) < errorRate).astype(int)
+            error2 = (np.random.random(n) < errorRate).astype(int)
+            error = (error1 + error2) % 2
             
             syndrome = (error @ code.T) % 2
             
