@@ -12,7 +12,9 @@ codes = [
     "[[288, 12, 18]]",
 ]
 physicalErrorRates = [0.005] 
-trials = 1000
+trials = 20000
+
+np.random.seed(0)
 
 stabilizer_spectra = {} 
 
