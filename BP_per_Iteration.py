@@ -18,7 +18,7 @@ iterations = [10, 20, 30, 40, 50, 60, 70, 80, 90]
 
 code_labels = ['72', '90', '108', '144', '288']
 
-trials = 10000
+trials = 100
 
 np.random.seed(0)
 
@@ -35,6 +35,7 @@ for code in codes:
     degeneracies = []
     OSD_invocations = []
     llrs_per_iter = []  
+    llrs_per_iter_after_OSD = []
     
     for max_iter in iterations:
         initialBeliefs = [np.log((1 - errorRate) / errorRate)] * n
@@ -43,6 +44,7 @@ for code in codes:
         degenerateErrors = 0
         OSD_invoked = 0
         iter_llrs = [] 
+        iter_llrs_after_OSD = []
         
         for _ in tqdm.tqdm(range(trials)):
             error = (np.random.random(n) < errorRate).astype(int)
@@ -54,6 +56,8 @@ for code in codes:
             iter_llrs.extend(llrs)
             
             if not isSyndromeFound:
+                
+                iter_llrs_after_OSD.extend(llrs)
                 
                 detection = performOSD(code, syndrome, llrs, detection)
                 
@@ -76,17 +80,19 @@ for code in codes:
         degeneracies.append(degenerateErrors / trials)
         OSD_invocations.append(OSD_invoked / trials)
         llrs_per_iter.append(iter_llrs)
+        llrs_per_iter_after_OSD.append(iter_llrs_after_OSD)
     
     results[name]['logicalErrors'] = logicalErrors
     results[name]['degeneracies'] = degeneracies
     results[name]['OSD_invocations'] = OSD_invocations
     results[name]['iterations'] = iterations
     results[name]['llrs_per_iter'] = llrs_per_iter
+    results[name]['llrs_per_iter_after_OSD'] = llrs_per_iter_after_OSD
         
 np.savez('data/BP_per_Iteration.npz', results=results, allow_pickle=True)
 
 # for each code, create a column and plot logical error rate vs iterations
-fig, axes = plt.subplots(4, len(results), figsize=(6*len(results), 20))
+fig, axes = plt.subplots(5, len(results), figsize=(6*len(results), 20))
 properties = ['logicalErrors', 'degeneracies', 'OSD_invocations']
 property_labels = ['Logical Error Rate', 'Degeneracies', 'OSD Invocations']
 
@@ -118,6 +124,26 @@ for col, (name, data) in enumerate(results.items()):
     
     ax.set_xlabel('Max BP Iterations')
     ax.set_ylabel('LLR Distribution (BP output)')
+    ax.grid(True)
+    ax.axhline(y=0, color='r', linestyle='--', alpha=0.5)
+    
+    ax = axes[4, col]
+    llrs_data_after_OSD = data['llrs_per_iter_after_OSD']
+    
+    valid_data_after_OSD = []
+    valid_positions_after_OSD = []
+    for i, llrs in enumerate(llrs_data_after_OSD):
+        if len(llrs) > 0:
+            valid_data_after_OSD.append(llrs)
+            valid_positions_after_OSD.append(data['iterations'][i])
+    
+    if valid_data_after_OSD:
+        parts = ax.violinplot(valid_data_after_OSD, positions=valid_positions_after_OSD, widths=8, showmeans=True, showmedians=True)
+        for pc in parts['bodies']:
+            pc.set_alpha(0.7)
+    
+    ax.set_xlabel('Max BP Iterations')
+    ax.set_ylabel('LLR Distribution (post-OSD)')
     ax.grid(True)
     ax.axhline(y=0, color='r', linestyle='--', alpha=0.5)
 
