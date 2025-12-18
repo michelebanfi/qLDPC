@@ -33,7 +33,7 @@ codes = [
 errorRate = 0.01
 iterations = [10, 20, 30, 40, 50, 60, 70, 80, 90]
 code_labels = ['72', '90', '108', '144', '288']
-trials = 10000
+trials = 100000
 
 # Batch size for GPU processing - adjust based on your GPU memory
 # Larger = faster but more memory
