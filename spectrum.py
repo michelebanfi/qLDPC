@@ -36,6 +36,7 @@ for code_name in codes:
     print(f"Simulating {code_name}...")
     for _ in tqdm.tqdm(range(trials)):
         error = (np.random.random(n) < 0.005).astype(int)
+        # error_weight = np.sum(error)
         syndrome = (error @ Hx.T) % 2
         
         detection, isSyndromeFound, llrs = performBeliefPropagationFast(Hx, syndrome, initialBeliefs, verbose=False)
