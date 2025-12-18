@@ -18,7 +18,7 @@ iterations = [10, 20, 30, 40, 50, 60, 70, 80, 90]
 
 code_labels = ['72', '90', '108', '144', '288']
 
-trials = 100
+trials = 10000
 
 np.random.seed(0)
 
