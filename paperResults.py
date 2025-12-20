@@ -15,7 +15,7 @@ codes = [
 
 np.random.seed(0)
 
-trials = 10000
+trials = 100000
 # physicalErrorRates = np.logspace(-3.2, -1.3, 8)
 physicalErrorRates = [0.01, 0.006, 0.005, 0.004, 0.003, 0.002, 0.001, 0.0009]
 results_OSD = {}
