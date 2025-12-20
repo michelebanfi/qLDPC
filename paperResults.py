@@ -66,7 +66,7 @@ for code in tqdm.tqdm(codes):
             # measurementError = (np.random.random(len(syndrome)) < errorRate).astype(int)
             # syndrome = (syndrome + measurementError) % 2
             
-            detection, isSyndromeFound, llrs = performBeliefPropagationFast(code, syndrome, initialBeliefs, verbose=False)
+            detection, isSyndromeFound, llrs = performBeliefPropagationFast(code, syndrome, initialBeliefs, verbose=False, maxIter=75)
             
             if not isSyndromeFound:
                 # logical_error += 1
