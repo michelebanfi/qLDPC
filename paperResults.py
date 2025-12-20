@@ -4,6 +4,7 @@ import tqdm
 
 from decoding.beliefPropagation import performBeliefPropagationFast
 from decoding.OSD import performOSD
+from decoding.OSD_enhanced import performOSD_enhanced
 
 codes = [
     "[[72, 12, 6]]",
@@ -15,7 +16,7 @@ codes = [
 
 np.random.seed(0)
 
-trials = 100000
+trials = 1000
 # physicalErrorRates = np.logspace(-3.2, -1.3, 8)
 physicalErrorRates = [0.01, 0.006, 0.005, 0.004, 0.003, 0.002, 0.001, 0.0009]
 results_OSD = {}
@@ -73,6 +74,7 @@ for code in tqdm.tqdm(codes):
                 # BPs_fault += 1
                 
                 detection = performOSD(code, syndrome, llrs, detection)
+                # detection = performOSD_enhanced(code, syndrome, llrs, detection, order=2)
                 
                 
 

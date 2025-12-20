@@ -14,6 +14,7 @@ import matplotlib.pyplot as plt
 import tqdm
 import time
 
+from decoding.OSD_enhanced import performOSD_enhanced
 from decoding.beliefPropagationGPU import (
     performBeliefPropagationBatch,
     generate_errors_and_syndromes_batch,
@@ -37,7 +38,7 @@ physicalErrorRates = [0.01, 0.006, 0.005, 0.004, 0.003, 0.002, 0.001, 0.0009]
 
 # Batch size for GPU processing - adjust based on your GPU memory
 # Larger = faster but more memory
-BATCH_SIZE = 1000
+BATCH_SIZE = 100000
 
 results_OSD = {}
 
@@ -115,7 +116,8 @@ for code_name in tqdm.tqdm(codes, desc="Processing codes"):
                 
                 if not isSyndromeFound:
                     # BP failed, run OSD
-                    detection = performOSD(code, syndrome, llrs, detection)
+                    # detection = performOSD(code, syndrome, llrs, detection)
+                    detection = performOSD_enhanced(code, syndrome, llrs, detection, order=7)
                 
                 # This is the XOR between the actual error and the detected error
                 # We are simulating the correction of the error
