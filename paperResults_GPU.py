@@ -38,7 +38,7 @@ physicalErrorRates = [0.01, 0.006, 0.005, 0.004, 0.003, 0.002, 0.001, 0.0009]
 
 # Batch size for GPU processing - adjust based on your GPU memory
 # Larger = faster but more memory
-BATCH_SIZE = 100000
+BATCH_SIZE = 1000
 
 results_OSD = {}
 
