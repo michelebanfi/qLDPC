@@ -41,7 +41,7 @@ physicalErrorRates = [0.05, 0.04, 0.03, 0.02, 0.01, 0.009, 0.008, 0.007]
 
 # Batch size for GPU processing - adjust based on your GPU memory
 # Larger = faster but more memory
-BATCH_SIZE = 1000
+BATCH_SIZE = 5000
 
 results_OSD = {}
 
@@ -106,7 +106,7 @@ for code_name in tqdm.tqdm(codes, desc="Processing codes"):
             
             # Run batched BP
             detections, converged, llrs_batch = performBeliefPropagationBatch(
-                code, syndromes, initialBeliefs, maxIter=75
+                code, syndromes, initialBeliefs, maxIter=9999
             )
             
             # Process results for this batch
