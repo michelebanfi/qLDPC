@@ -35,6 +35,8 @@ rng = np.random.default_rng(0)
 
 trials = 100000
 physicalErrorRates = [0.1, 0.06, 0.05, 0.04, 0.03, 0.02, 0.01, 0.009]
+physicalErrorRates = [0.05, 0.01, 0.009, 0.008, 0.007, 0.006, 0.005, 0.001]
+# physicalErrorRates = [0.01, 0.006, 0.005, 0.004, 0.003, 0.002, 0.001, 0.0009]
 
 # Batch size for GPU processing - adjust based on your GPU memory
 # Larger = faster but more memory
