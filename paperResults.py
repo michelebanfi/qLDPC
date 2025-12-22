@@ -19,6 +19,7 @@ np.random.seed(0)
 trials = 1000
 # physicalErrorRates = np.logspace(-3.2, -1.3, 8)
 physicalErrorRates = [0.01, 0.006, 0.005, 0.004, 0.003, 0.002, 0.001, 0.0009]
+physicalErrorRates = [0.05, 0.04, 0.03, 0.02, 0.01, 0.009, 0.008, 0.007]
 results_OSD = {}
 
 names = codes  # preserve the original order used to build `results`
@@ -67,7 +68,7 @@ for code in tqdm.tqdm(codes):
             # measurementError = (np.random.random(len(syndrome)) < errorRate).astype(int)
             # syndrome = (syndrome + measurementError) % 2
             
-            detection, isSyndromeFound, llrs = performBeliefPropagationFast(code, syndrome, initialBeliefs, verbose=False, maxIter=75)
+            detection, isSyndromeFound, llrs = performBeliefPropagationFast(code, syndrome, initialBeliefs, verbose=False, maxIter=200)
             
             if not isSyndromeFound:
                 # logical_error += 1

@@ -33,7 +33,7 @@ codes = [
 np.random.seed(0)
 rng = np.random.default_rng(0)
 
-trials = 100000
+trials = 10000
 physicalErrorRates = [0.1, 0.06, 0.05, 0.04, 0.03, 0.02, 0.01, 0.009]
 physicalErrorRates = [0.05, 0.01, 0.009, 0.008, 0.007, 0.006, 0.005, 0.001]
 physicalErrorRates = [0.05, 0.04, 0.03, 0.02, 0.01, 0.009, 0.008, 0.007]
@@ -106,7 +106,7 @@ for code_name in tqdm.tqdm(codes, desc="Processing codes"):
             
             # Run batched BP
             detections, converged, llrs_batch = performBeliefPropagationBatch(
-                code, syndromes, initialBeliefs, maxIter=9999
+                code, syndromes, initialBeliefs, maxIter=150
             )
             
             # Process results for this batch
