@@ -42,6 +42,9 @@ experiment_dict = {exp["name"]: exp for exp in experiment}
 
 trials = 10
 
+BP_maxIter = 50
+OSD_order = 0
+
 np.random.seed(0)
 
 results = {}
@@ -72,11 +75,11 @@ for exp in experiment:
             syndrome = (error @ code.T) % 2
 
             detection, isSyndromeFound, llrs, iteration = performBeliefPropagationFast(
-                code, syndrome, initialBeliefs, maxIter=50
+                code, syndrome, initialBeliefs, maxIter=BP_maxIter
             )
 
             if not isSyndromeFound:
-                detection = performOSD_enhanced(code, syndrome, llrs, detection, order=2)
+                detection = performOSD_enhanced(code, syndrome, llrs, detection, order=OSD_order)
                 OSD_invocations += 1
                 
             residual = (detection + error) % 2
@@ -122,6 +125,7 @@ np.savez("rework/simulation_results.npz", results=results)
 colors = ["2E72AE", "64B791", "DBA142", "000000", "E17792"]
 
 fig, axes = plt.subplots(3, 1, figsize=(6, 8), sharex=True)
+fig.suptitle(f"Monte Carlo trials: {trials}, BP max iterations: {BP_maxIter}, OSD order: {OSD_order}")
 for (code_name, code_results), color in zip(results.items(), colors):
     x = list(code_results.keys())
     axes[0].semilogy(
