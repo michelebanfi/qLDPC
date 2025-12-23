@@ -52,7 +52,7 @@ def performBeliefPropagationFast(H, syndrome, initialBelief, maxIter=50):
         calculateSyndrome = H_sparse.dot(candidateError) % 2
         
         if np.array_equal(calculateSyndrome, syndrome):
-            return candidateError, True, values
+            return candidateError, True, values, currentIter
     
     return candidateError, False, values, currentIter
 
