@@ -67,6 +67,8 @@ for exp in experiment:
         
         weights_found_BP_error = []
         weights_found_OSD_error = []
+
+        OSD_invocation_AND_logicalError = 0
         
 
         for _ in tqdm.tqdm(range(trials), desc=f"Code {code_name}, p={errorRate}"):
@@ -93,6 +95,7 @@ for exp in experiment:
                 logicalError += 1
                 if not isSyndromeFound:
                     weights_found_OSD_error.append(np.sum(residual))
+                    OSD_invocation_AND_logicalError += 1
                 if isSyndromeFound:
                     weights_found_BP_error.append(np.sum(residual))
             
@@ -108,10 +111,12 @@ for exp in experiment:
         logicalErrorRate = logicalError / trials
         OSD_invocationRate = OSD_invocations / trials
         degenerateErrorRate = degenerateErrors / trials
+        OSD_invocation_AND_logicalErrorRate = OSD_invocation_AND_logicalError / trials
         results[code_name][errorRate] = {
             "logical": logicalErrorRate,
             "osd": OSD_invocationRate,
             "degeneracies": degenerateErrorRate,
+            "OSD_invocation_AND_logicalError": OSD_invocation_AND_logicalErrorRate,
             "weights_found_BP": weights_found_BP,
             "weights_found_OSD": weights_found_OSD,
             "weights_found_BP_error": weights_found_BP_error,
@@ -125,8 +130,8 @@ np.savez("rework/simulation_results.npz", results=results)
 
 colors = ["2E72AE", "64B791", "DBA142", "000000", "E17792"]
 
-fig, axes = plt.subplots(3, 1, figsize=(6, 8), sharex=True)
-fig.suptitle(f"Monte Carlo trials: {trials}, BP max iterations: {BP_maxIter}, OSD order: {OSD_order}")
+fig, axes = plt.subplots(4, 1, figsize=(6, 8), sharex=True)
+fig.suptitle(f"Monte Carlo trials: {trials}, BP max iterations: {BP_maxIter}, OSD order: {OSD_order} \n The y-axis shows rates calculated over all trials.")
 for (code_name, code_results), color in zip(results.items(), colors):
     x = list(code_results.keys())
     axes[0].loglog(
@@ -150,6 +155,13 @@ for (code_name, code_results), color in zip(results.items(), colors):
         label=f"Code {code_name}",
         color=f"#{color}",
     )
+    axes[3].plot(
+        x,
+        [v["OSD_invocation_AND_logicalError"] for v in code_results.values()],
+        marker="^",
+        label=f"Code {code_name}",
+        color=f"#{color}",
+    )
 
 axes[0].set_ylabel("Logical Error Rate")
 axes[0].grid(True, which="both", ls="--")
@@ -159,10 +171,14 @@ axes[1].set_ylabel("OSD Invocation Rate")
 axes[1].grid(True, which="both", ls="--")
 axes[1].legend()
 
-axes[2].set_xlabel("Physical Error Rate")
 axes[2].set_ylabel("Degenerate Errors Rate")
 axes[2].grid(True, which="both", ls="--")
 axes[2].legend()
+
+axes[3].set_xlabel("Physical Error Rate")
+axes[3].set_ylabel("OSD Invocation & Error")
+axes[3].grid(True, which="both", ls="--")
+axes[3].legend()
 
 plt.tight_layout()
 plt.savefig("rework/logical_error_rates.png", dpi=300)
