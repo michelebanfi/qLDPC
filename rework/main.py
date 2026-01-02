@@ -40,7 +40,7 @@ experiment = [
 
 experiment_dict = {exp["name"]: exp for exp in experiment}
 
-trials = 10000
+trials = 1000
 
 BP_maxIter = 50
 OSD_order = 0
@@ -88,9 +88,7 @@ for exp in experiment:
             osd_syndrome_check = (detection @ code.T) % 2
             is_valid_osd = np.array_equal(osd_syndrome_check, syndrome)
             
-            if is_valid_osd and not np.any(syndromeLogic) and (np.array_equal(detection, error) == False):
-                degenerateErrors += 1
-                
+            # we have a logical error!    
             if np.any(syndromeLogic):
                 logicalError += 1
                 if not isSyndromeFound:
@@ -98,11 +96,14 @@ for exp in experiment:
                 if isSyndromeFound:
                     weights_found_BP_error.append(np.sum(residual))
             
+            # we do not have a logical errror, but we calculate the weight of the error
             if not np.any(syndromeLogic):
                 if not np.array_equal(detection, error):
                     w = np.sum(residual)
                     if not isSyndromeFound: weights_found_OSD.append(w)
                     if isSyndromeFound: weights_found_BP.append(w)
+
+                    if is_valid_osd: degenerateErrors += 1
 
         logicalErrorRate = logicalError / trials
         OSD_invocationRate = OSD_invocations / trials
@@ -128,7 +129,7 @@ fig, axes = plt.subplots(3, 1, figsize=(6, 8), sharex=True)
 fig.suptitle(f"Monte Carlo trials: {trials}, BP max iterations: {BP_maxIter}, OSD order: {OSD_order}")
 for (code_name, code_results), color in zip(results.items(), colors):
     x = list(code_results.keys())
-    axes[0].semilogy(
+    axes[0].loglog(
         x,
         [v["logical"] for v in code_results.values()],
         marker="d",
