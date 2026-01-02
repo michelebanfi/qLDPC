@@ -40,7 +40,7 @@ experiment = [
 
 experiment_dict = {exp["name"]: exp for exp in experiment}
 
-trials = 10000
+trials = 1000
 
 configurations = [
     {"bp_iter": 50, "osd_order": 0, "label": "BP50_OSD0"},
@@ -197,5 +197,74 @@ for code_name, code_data in results.items():
     axes[3].legend()
 
     plt.tight_layout()
-    plt.savefig(f"rework/results_{code_name}.png", dpi=300)
+    plt.savefig(f"rework/orderOutput/results_{code_name}.png", dpi=300)
     plt.close(fig)
+
+    # --- New Histogram Code ---
+    
+    # 1. Successful Decodings
+    fig_w, axes_w = plt.subplots(len(configurations), 1, figsize=(8, 12), sharex=True)
+    if len(configurations) == 1: axes_w = [axes_w] # Handle single config case just in case
+    fig_w.suptitle(f"Code {code_name} - Weight Distribution (Success)")
+
+    for i, (config_label, config_results) in enumerate(code_data.items()):
+        weights_BP = []
+        weights_OSD = []
+        for res in config_results.values():
+            weights_BP.extend(res["weights_found_BP"])
+            weights_OSD.extend(res["weights_found_OSD"])
+        
+        ax = axes_w[i]
+        # Determine bins based on data
+        all_weights = weights_BP + weights_OSD
+        max_w = max(all_weights) if all_weights else 30
+        bins = np.arange(0, max_w + 2) - 0.5
+        
+        if weights_BP:
+            ax.hist(weights_BP, bins=bins, alpha=0.6, label='BP', density=True, color="#2E72AE")
+        if weights_OSD:
+            ax.hist(weights_OSD, bins=bins, alpha=0.6, label='OSD', density=True, color="#DBA142")
+            
+        ax.axvline(x=experiment_dict[code_name]['distance'], color='red', linestyle='dashed', label='Distance')
+        ax.set_title(f"Config: {config_label}")
+        ax.set_ylabel("Density")
+        ax.legend()
+        ax.grid(True, alpha=0.3)
+
+    axes_w[-1].set_xlabel("Weight")
+    plt.tight_layout()
+    plt.savefig(f"rework/orderOutput/weights_histograms_{code_name}.png", dpi=300)
+    plt.close(fig_w)
+
+    # 2. Logical Errors
+    fig_e, axes_e = plt.subplots(len(configurations), 1, figsize=(8, 12), sharex=True)
+    if len(configurations) == 1: axes_e = [axes_e]
+    fig_e.suptitle(f"Code {code_name} - Weight Distribution (Logical Errors)")
+
+    for i, (config_label, config_results) in enumerate(code_data.items()):
+        weights_BP_err = []
+        weights_OSD_err = []
+        for res in config_results.values():
+            weights_BP_err.extend(res["weights_found_BP_error"])
+            weights_OSD_err.extend(res["weights_found_OSD_error"])
+        
+        ax = axes_e[i]
+        all_weights = weights_BP_err + weights_OSD_err
+        max_w = max(all_weights) if all_weights else 30
+        bins = np.arange(0, max_w + 2) - 0.5
+        
+        if weights_BP_err:
+            ax.hist(weights_BP_err, bins=bins, alpha=0.6, label='BP Error', density=True, color="#E17792")
+        if weights_OSD_err:
+            ax.hist(weights_OSD_err, bins=bins, alpha=0.6, label='OSD Error', density=True, color="#000000")
+            
+        ax.axvline(x=experiment_dict[code_name]['distance'], color='red', linestyle='dashed', label='Distance')
+        ax.set_title(f"Config: {config_label}")
+        ax.set_ylabel("Density")
+        ax.legend()
+        ax.grid(True, alpha=0.3)
+
+    axes_e[-1].set_xlabel("Weight")
+    plt.tight_layout()
+    plt.savefig(f"rework/orderOutput/weights_histograms_ERROR_{code_name}.png", dpi=300)
+    plt.close(fig_e)
