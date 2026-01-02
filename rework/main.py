@@ -40,7 +40,7 @@ experiment = [
 
 experiment_dict = {exp["name"]: exp for exp in experiment}
 
-trials = 1000
+trials = 10000
 
 BP_maxIter = 50
 OSD_order = 0
