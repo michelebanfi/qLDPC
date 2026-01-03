@@ -40,7 +40,7 @@ experiment = [
 
 experiment_dict = {exp["name"]: exp for exp in experiment}
 
-trials = 1000
+trials = 10000
 
 configurations = [
     {"bp_iter": 50, "osd_order": 0, "label": "BP50_OSD0"},
