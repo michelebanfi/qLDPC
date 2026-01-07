@@ -42,7 +42,7 @@ experiment_dict = {exp["name"]: exp for exp in experiment}
 
 trials = 10000
 
-BP_maxIter = 100
+BP_maxIter = 50
 OSD_order = 0
 
 np.random.seed(0)
@@ -68,6 +68,7 @@ for exp in experiment:
         degenerateErrors = 0
         weights_found_BP = []
         weights_found_OSD = []
+        iterations = []
         
         weights_found_BP_error = []
         weights_found_OSD_error = []
@@ -85,6 +86,7 @@ for exp in experiment:
             detection, isSyndromeFound, llrs, iteration = performBeliefPropagationFast(
                 code, syndrome, initialBeliefs, maxIter=BP_maxIter
             )
+            iterations.append(iteration)
 
             if collect_stats:
                 # We mask the LLRs based on what the bit truly was
@@ -125,6 +127,7 @@ for exp in experiment:
         logicalErrorRate = logicalError / trials
         OSD_invocationRate = OSD_invocations / trials
         degenerateErrorRate = degenerateErrors / trials
+        average_iterations = np.mean(iterations)
         OSD_invocation_AND_logicalErrorRate = OSD_invocation_AND_logicalError / trials
         results[code_name][errorRate] = {
             "logical": logicalErrorRate,
@@ -135,6 +138,7 @@ for exp in experiment:
             "weights_found_OSD": weights_found_OSD,
             "weights_found_BP_error": weights_found_BP_error,
             "weights_found_OSD_error": weights_found_OSD_error,
+            "average_iterations": average_iterations,
         }
         print(
             f"Code {code_name}, p={errorRate}, Logical Error Rate: {logicalErrorRate}, OSD Invocation Rate: {OSD_invocationRate}"
@@ -270,3 +274,22 @@ for ax, (code_name, data) in zip(axes_llr, llr_data.items()):
 
 plt.tight_layout()
 plt.savefig("rework/llr_distributions.png", dpi=300)
+
+# plot the average iterations per code and error rate
+fig_iter, axes_iter = plt.subplots(1, 1, figsize=(8, 6))
+for (code_name, code_results), color in zip(results.items(), colors):
+    x = list(code_results.keys())
+    axes_iter.plot(
+        x,
+        [v["average_iterations"] for v in code_results.values()],
+        marker="o",
+        label=f"Code {code_name}",
+        color=f"#{color}",
+    )
+axes_iter.set_xlabel("Physical Error Rate")
+axes_iter.set_ylabel("Average BP Iterations")
+axes_iter.set_title(f"Average BP Iterations vs Physical Error Rate \n (Monte Carlo trials: {trials}, BP max iterations: {BP_maxIter}, OSD order: {OSD_order})")
+axes_iter.grid(True, which="both", ls="--")
+axes_iter.legend()
+plt.tight_layout()
+plt.savefig("rework/average_bp_iterations.png", dpi=300)
