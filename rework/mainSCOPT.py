@@ -42,12 +42,14 @@ experiment_dict = {exp["name"]: exp for exp in experiment}
 
 trials = 10000
 
-BP_maxIter = 50
+BP_maxIter = 100
 OSD_order = 0
 
 np.random.seed(0)
 
 results = {}
+llr_data = {}
+
 for exp in experiment:
     code_name = exp["name"]
     oc = np.load(f"codes/{exp['code']}.npz")
@@ -55,6 +57,8 @@ for exp in experiment:
     Lx = oc["Lx"]
     n = len(code[0])
     results[code_name] = {}
+
+    llr_data[code_name] = {"true_0": [], "true_1": []}
 
     for errorRate in exp["physicalErrorRates"]:
         initialBeliefs = [np.log((1 - errorRate) / errorRate)] * n
@@ -69,6 +73,8 @@ for exp in experiment:
         weights_found_OSD_error = []
 
         OSD_invocation_AND_logicalError = 0
+
+        collect_stats = (errorRate == exp["physicalErrorRates"][0])
         
 
         for _ in tqdm.tqdm(range(trials), desc=f"Code {code_name}, p={errorRate}"):
@@ -79,6 +85,14 @@ for exp in experiment:
             detection, isSyndromeFound, llrs, iteration = performBeliefPropagationFast(
                 code, syndrome, initialBeliefs, maxIter=BP_maxIter
             )
+
+            if collect_stats:
+                # We mask the LLRs based on what the bit truly was
+                # llrs corresponding to bits that were 0 (No Error)
+                llr_data[code_name]["true_0"].extend(llrs[error == 0])
+                
+                # llrs corresponding to bits that were 1 (Error)
+                llr_data[code_name]["true_1"].extend(llrs[error == 1])
 
             if not isSyndromeFound:
                 detection = performOSD_enhanced(code, syndrome, llrs, detection, order=OSD_order)
@@ -130,105 +144,129 @@ np.savez("rework/simulation_results.npz", results=results)
 
 colors = ["2E72AE", "64B791", "DBA142", "000000", "E17792"]
 
-fig, axes = plt.subplots(4, 1, figsize=(6, 8), sharex=True)
-fig.suptitle(f"Monte Carlo trials: {trials}, BP max iterations: {BP_maxIter}, OSD order: {OSD_order} \n The y-axis shows rates calculated over all trials.")
-for (code_name, code_results), color in zip(results.items(), colors):
-    x = list(code_results.keys())
-    axes[0].loglog(
-        x,
-        [v["logical"] for v in code_results.values()],
-        marker="d",
-        label=f"Code {code_name}",
-        color=f"#{color}",
-    )
-    axes[1].plot(
-        x,
-        [v["osd"] for v in code_results.values()],
-        marker="o",
-        label=f"Code {code_name}",
-        color=f"#{color}",
-    )
-    axes[2].plot(
-        x,
-        [v["degeneracies"] for v in code_results.values()],
-        marker="s",
-        label=f"Code {code_name}",
-        color=f"#{color}",
-    )
-    axes[3].plot(
-        x,
-        [v["OSD_invocation_AND_logicalError"] for v in code_results.values()],
-        marker="^",
-        label=f"Code {code_name}",
-        color=f"#{color}",
-    )
+# fig, axes = plt.subplots(4, 1, figsize=(6, 8), sharex=True)
+# fig.suptitle(f"Monte Carlo trials: {trials}, BP max iterations: {BP_maxIter}, OSD order: {OSD_order} \n The y-axis shows rates calculated over all trials.")
+# for (code_name, code_results), color in zip(results.items(), colors):
+#     x = list(code_results.keys())
+#     axes[0].loglog(
+#         x,
+#         [v["logical"] for v in code_results.values()],
+#         marker="d",
+#         label=f"Code {code_name}",
+#         color=f"#{color}",
+#     )
+#     axes[1].plot(
+#         x,
+#         [v["osd"] for v in code_results.values()],
+#         marker="o",
+#         label=f"Code {code_name}",
+#         color=f"#{color}",
+#     )
+#     axes[2].plot(
+#         x,
+#         [v["degeneracies"] for v in code_results.values()],
+#         marker="s",
+#         label=f"Code {code_name}",
+#         color=f"#{color}",
+#     )
+#     axes[3].plot(
+#         x,
+#         [v["OSD_invocation_AND_logicalError"] for v in code_results.values()],
+#         marker="^",
+#         label=f"Code {code_name}",
+#         color=f"#{color}",
+#     )
 
-axes[0].set_ylabel("Logical Error Rate")
-axes[0].grid(True, which="both", ls="--")
-axes[0].legend()
+# axes[0].set_ylabel("Logical Error Rate")
+# axes[0].grid(True, which="both", ls="--")
+# axes[0].legend()
 
-axes[1].set_ylabel("OSD Invocation Rate")
-axes[1].grid(True, which="both", ls="--")
-axes[1].legend()
+# axes[1].set_ylabel("OSD Invocation Rate")
+# axes[1].grid(True, which="both", ls="--")
+# axes[1].legend()
 
-axes[2].set_ylabel("Degenerate Errors Rate")
-axes[2].grid(True, which="both", ls="--")
-axes[2].legend()
+# axes[2].set_ylabel("Degenerate Errors Rate")
+# axes[2].grid(True, which="both", ls="--")
+# axes[2].legend()
 
-axes[3].set_xlabel("Physical Error Rate")
-axes[3].set_ylabel("OSD Invocation & Error")
-axes[3].grid(True, which="both", ls="--")
-axes[3].legend()
+# axes[3].set_xlabel("Physical Error Rate")
+# axes[3].set_ylabel("OSD Invocation & Error")
+# axes[3].grid(True, which="both", ls="--")
+# axes[3].legend()
+
+# plt.tight_layout()
+# plt.savefig("rework/logical_error_rates.png", dpi=300)
+
+# fig2, axes2 = plt.subplots(2, 5, figsize=(15, 8))
+# for i, (code_name, code_results) in enumerate(results.items()):
+#     weights_BP = []
+#     weights_OSD = []
+#     for res in code_results.values():
+#         weights_BP.extend(res["weights_found_BP"])
+#         weights_OSD.extend(res["weights_found_OSD"])
+    
+#     if weights_BP:
+#         axes2[0, i].hist(weights_BP, bins=np.arange(0, 30)-0.5, color=f"#{colors[i]}", alpha=0.7)
+#     axes2[0, i].axvline(x=experiment_dict[code_name]['distance'], color='red', linestyle='dashed', label='Code Distance')
+#     axes2[0, i].set_title(f"Code {code_name} (BP)")
+#     axes2[0, i].set_xlabel("Weight")
+#     axes2[0, i].set_ylabel("Frequency")
+    
+#     if weights_OSD:
+#         axes2[1, i].hist(weights_OSD, bins=np.arange(0, 30)-0.5, color=f"#{colors[i]}", alpha=0.7)
+#     axes2[1, i].axvline(x=experiment_dict[code_name]['distance'], color='red', linestyle='dashed', label='Code Distance')
+#     axes2[1, i].set_title(f"Code {code_name} (OSD)")
+#     axes2[1, i].set_xlabel("Weight")
+#     axes2[1, i].set_ylabel("Frequency")
+
+# plt.tight_layout()
+# plt.savefig("rework/weights_histograms.png", dpi=300)
+
+# fig2, axes2 = plt.subplots(2, 5, figsize=(15, 8))
+# for i, (code_name, code_results) in enumerate(results.items()):
+#     weights_BP = []
+#     weights_OSD = []
+#     for res in code_results.values():
+#         weights_BP.extend(res["weights_found_BP_error"])
+#         weights_OSD.extend(res["weights_found_OSD_error"])
+    
+#     if weights_BP:
+#         axes2[0, i].hist(weights_BP, bins=np.arange(0, 30)-0.5, color=f"#{colors[i]}", alpha=0.7)
+#     axes2[0, i].axvline(x=experiment_dict[code_name]['distance'], color='red', linestyle='dashed', label='Code Distance')
+#     axes2[0, i].set_title(f"Code {code_name} (BP)")
+#     axes2[0, i].set_xlabel("Weight")
+#     axes2[0, i].set_ylabel("Frequency")
+    
+#     if weights_OSD:
+#         axes2[1, i].hist(weights_OSD, bins=np.arange(0, 30)-0.5, color=f"#{colors[i]}", alpha=0.7)
+#     axes2[1, i].axvline(x=experiment_dict[code_name]['distance'], color='red', linestyle='dashed', label='Code Distance')
+#     axes2[1, i].set_title(f"Code {code_name} (OSD)")
+#     axes2[1, i].set_xlabel("Weight")
+#     axes2[1, i].set_ylabel("Frequency")
+
+# plt.tight_layout()
+# plt.savefig("rework/weights_histograms_ERROR.png", dpi=300)
+
+fig_llr, axes_llr = plt.subplots(len(llr_data), 1, figsize=(10, 4 * len(llr_data)), sharex=False)
+
+if len(llr_data) == 1: axes_llr = [axes_llr] # Handle single plot case
+
+for ax, (code_name, data) in zip(axes_llr, llr_data.items()):
+    
+    # Plot histogram for bits that were truly 0 (Should be Positive)
+    ax.hist(data["true_0"], bins=100, color='blue', alpha=0.5, density=True, label='True Bit = 0 (No Error)')
+    
+    # Plot histogram for bits that were truly 1 (Should be Negative)
+    ax.hist(data["true_1"], bins=100, color='red', alpha=0.5, density=True, label='True Bit = 1 (Error)')
+
+    ax.set_title(f"LLR Distribution: Code {code_name} (Highest Error Rate)")
+    ax.set_xlabel("Log-Likelihood Ratio (LLR)")
+    ax.set_ylabel("Density")
+    ax.legend()
+    ax.grid(True, alpha=0.3)
+    
+    # Add a vertical line at 0 (The Decision Boundary)
+    ax.axvline(0, color='black', linestyle='--', alpha=0.7)
 
 plt.tight_layout()
-plt.savefig("rework/logical_error_rates.png", dpi=300)
-
-fig2, axes2 = plt.subplots(2, 5, figsize=(15, 8))
-for i, (code_name, code_results) in enumerate(results.items()):
-    weights_BP = []
-    weights_OSD = []
-    for res in code_results.values():
-        weights_BP.extend(res["weights_found_BP"])
-        weights_OSD.extend(res["weights_found_OSD"])
-    
-    if weights_BP:
-        axes2[0, i].hist(weights_BP, bins=np.arange(0, 30)-0.5, color=f"#{colors[i]}", alpha=0.7)
-    axes2[0, i].axvline(x=experiment_dict[code_name]['distance'], color='red', linestyle='dashed', label='Code Distance')
-    axes2[0, i].set_title(f"Code {code_name} (BP)")
-    axes2[0, i].set_xlabel("Weight")
-    axes2[0, i].set_ylabel("Frequency")
-    
-    if weights_OSD:
-        axes2[1, i].hist(weights_OSD, bins=np.arange(0, 30)-0.5, color=f"#{colors[i]}", alpha=0.7)
-    axes2[1, i].axvline(x=experiment_dict[code_name]['distance'], color='red', linestyle='dashed', label='Code Distance')
-    axes2[1, i].set_title(f"Code {code_name} (OSD)")
-    axes2[1, i].set_xlabel("Weight")
-    axes2[1, i].set_ylabel("Frequency")
-
-plt.tight_layout()
-plt.savefig("rework/weights_histograms.png", dpi=300)
-
-fig2, axes2 = plt.subplots(2, 5, figsize=(15, 8))
-for i, (code_name, code_results) in enumerate(results.items()):
-    weights_BP = []
-    weights_OSD = []
-    for res in code_results.values():
-        weights_BP.extend(res["weights_found_BP_error"])
-        weights_OSD.extend(res["weights_found_OSD_error"])
-    
-    if weights_BP:
-        axes2[0, i].hist(weights_BP, bins=np.arange(0, 30)-0.5, color=f"#{colors[i]}", alpha=0.7)
-    axes2[0, i].axvline(x=experiment_dict[code_name]['distance'], color='red', linestyle='dashed', label='Code Distance')
-    axes2[0, i].set_title(f"Code {code_name} (BP)")
-    axes2[0, i].set_xlabel("Weight")
-    axes2[0, i].set_ylabel("Frequency")
-    
-    if weights_OSD:
-        axes2[1, i].hist(weights_OSD, bins=np.arange(0, 30)-0.5, color=f"#{colors[i]}", alpha=0.7)
-    axes2[1, i].axvline(x=experiment_dict[code_name]['distance'], color='red', linestyle='dashed', label='Code Distance')
-    axes2[1, i].set_title(f"Code {code_name} (OSD)")
-    axes2[1, i].set_xlabel("Weight")
-    axes2[1, i].set_ylabel("Frequency")
-
-plt.tight_layout()
-plt.savefig("rework/weights_histograms_ERROR.png", dpi=300)
+plt.savefig("rework/llr_distributions.png", dpi=300)
