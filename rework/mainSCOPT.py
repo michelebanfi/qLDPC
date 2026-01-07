@@ -42,8 +42,8 @@ experiment_dict = {exp["name"]: exp for exp in experiment}
 
 trials = 10000
 
-BP_maxIter = 100
-OSD_order = 7
+BP_maxIter = 50
+OSD_order = 0
 
 np.random.seed(0)
 
