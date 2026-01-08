@@ -148,7 +148,7 @@ np.savez("rework/simulation_results.npz", results=results)
 
 colors = ["2E72AE", "64B791", "DBA142", "000000", "E17792"]
 
-fig, axes = plt.subplots(4, 1, figsize=(6, 8), sharex=True)
+fig, axes = plt.subplots(5, 1, figsize=(6, 10), sharex=True)
 fig.suptitle(f"Monte Carlo trials: {trials}, BP max iterations: {BP_maxIter}, OSD order: {OSD_order} \n The y-axis shows rates calculated over all trials.")
 for (code_name, code_results), color in zip(results.items(), colors):
     x = list(code_results.keys())
@@ -180,6 +180,13 @@ for (code_name, code_results), color in zip(results.items(), colors):
         label=f"Code {code_name}",
         color=f"#{color}",
     )
+    axes[4].plot(
+        x,
+        [v["average_iterations"] for v in code_results.values()],
+        marker="o",
+        label=f"Code {code_name}",
+        color=f"#{color}",
+    )
 
 axes[0].set_ylabel("Logical Error Rate")
 axes[0].grid(True, which="both", ls="--")
@@ -193,10 +200,15 @@ axes[2].set_ylabel("Degenerate Errors Rate")
 axes[2].grid(True, which="both", ls="--")
 axes[2].legend()
 
-axes[3].set_xlabel("Physical Error Rate")
 axes[3].set_ylabel("OSD Invocation & Error")
 axes[3].grid(True, which="both", ls="--")
 axes[3].legend()
+
+axes[4].set_xlabel("Physical Error Rate")
+axes[4].set_ylabel("Average BP Iterations")
+axes[4].axhline(y=BP_maxIter, color='k', linestyle='--', label='BP Max Iter')
+axes[4].grid(True, which="both", ls="--")
+axes[4].legend()
 
 plt.tight_layout()
 plt.savefig("rework/SCOPT.png", dpi=300)
@@ -273,23 +285,23 @@ for ax, (code_name, data) in zip(axes_llr, llr_data.items()):
     ax.axvline(0, color='black', linestyle='--', alpha=0.7)
 
 plt.tight_layout()
-plt.savefig("rework/llr_distributions.png", dpi=300)
+plt.savefig("rework/llr_distributionsSCOPT.png", dpi=300)
 
 # plot the average iterations per code and error rate
-fig_iter, axes_iter = plt.subplots(1, 1, figsize=(8, 6))
-for (code_name, code_results), color in zip(results.items(), colors):
-    x = list(code_results.keys())
-    axes_iter.plot(
-        x,
-        [v["average_iterations"] for v in code_results.values()],
-        marker="o",
-        label=f"Code {code_name}",
-        color=f"#{color}",
-    )
-axes_iter.set_xlabel("Physical Error Rate")
-axes_iter.set_ylabel("Average BP Iterations")
-axes_iter.set_title(f"Average BP Iterations vs Physical Error Rate \n (Monte Carlo trials: {trials}, BP max iterations: {BP_maxIter}, OSD order: {OSD_order})")
-axes_iter.grid(True, which="both", ls="--")
-axes_iter.legend()
-plt.tight_layout()
-plt.savefig("rework/average_bp_iterations.png", dpi=300)
+# fig_iter, axes_iter = plt.subplots(1, 1, figsize=(8, 6))
+# for (code_name, code_results), color in zip(results.items(), colors):
+#     x = list(code_results.keys())
+#     axes_iter.plot(
+#         x,
+#         [v["average_iterations"] for v in code_results.values()],
+#         marker="o",
+#         label=f"Code {code_name}",
+#         color=f"#{color}",
+#     )
+# axes_iter.set_xlabel("Physical Error Rate")
+# axes_iter.set_ylabel("Average BP Iterations")
+# axes_iter.set_title(f"Average BP Iterations vs Physical Error Rate \n (Monte Carlo trials: {trials}, BP max iterations: {BP_maxIter}, OSD order: {OSD_order})")
+# axes_iter.grid(True, which="both", ls="--")
+# axes_iter.legend()
+# plt.tight_layout()
+# plt.savefig("rework/average_bp_iterations.png", dpi=300)
