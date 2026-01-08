@@ -200,11 +200,8 @@ for code_name, code_data in results.items():
     plt.savefig(f"rework/orderOutput/results_{code_name}.png", dpi=300)
     plt.close(fig)
 
-    # --- New Histogram Code ---
-    
-    # 1. Successful Decodings
     fig_w, axes_w = plt.subplots(len(configurations), 1, figsize=(8, 12), sharex=True)
-    if len(configurations) == 1: axes_w = [axes_w] # Handle single config case just in case
+    if len(configurations) == 1: axes_w = [axes_w]
     fig_w.suptitle(f"Code {code_name} - Weight Distribution (Success)")
 
     for i, (config_label, config_results) in enumerate(code_data.items()):
@@ -215,7 +212,6 @@ for code_name, code_data in results.items():
             weights_OSD.extend(res["weights_found_OSD"])
         
         ax = axes_w[i]
-        # Determine bins based on data
         all_weights = weights_BP + weights_OSD
         max_w = max(all_weights) if all_weights else 30
         bins = np.arange(0, max_w + 2) - 0.5
@@ -236,7 +232,6 @@ for code_name, code_data in results.items():
     plt.savefig(f"rework/orderOutput/weights_histograms_{code_name}.png", dpi=300)
     plt.close(fig_w)
 
-    # 2. Logical Errors
     fig_e, axes_e = plt.subplots(len(configurations), 1, figsize=(8, 12), sharex=True)
     if len(configurations) == 1: axes_e = [axes_e]
     fig_e.suptitle(f"Code {code_name} - Weight Distribution (Logical Errors)")

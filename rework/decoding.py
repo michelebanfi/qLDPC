@@ -56,6 +56,63 @@ def performBeliefPropagationFast(H, syndrome, initialBelief, maxIter=50):
     
     return candidateError, False, values, currentIter
 
+def performBeliefPropagation_Symmetric(H, syndrome, initialBelief, maxIter=50, damping=0.8, clip_llr=20.0):
+    """
+    BP with Damping and Symmetric Clipping to improve LLR distribution shape.
+    
+    :param damping: Factor (0.0 to 1.0). 1.0 = Standard BP. 0.8 = Recommended for QEC.
+                    Helps maintain distribution symmetry by preventing oscillation.
+    :param clip_llr: Maximum magnitude for LLRs. Prevents 'runaway' confidence.
+    """
+    
+    H = np.asarray(H, dtype=np.float64)
+    syndrome = np.asarray(syndrome, dtype=np.int8)
+    initialBelief = np.asarray(initialBelief, dtype=np.float64)
+    
+    H_sparse = csr_matrix(H)
+    mask = H != 0
+    syndrome_sign = (1 - 2 * syndrome).reshape(-1, 1)
+    
+    Q = np.where(mask, initialBelief, 0)
+    
+    Q_old = Q.copy() 
+    
+    CLIP_CHECK_VAL = 0.9999999
+    
+    for currentIter in range(maxIter):
+        
+        tanh_Q = np.tanh(Q * 0.5)
+        tanh_Q = np.where(mask, tanh_Q, 1.0)
+        
+        row_prod = np.prod(tanh_Q, axis=1, keepdims=True)
+        
+        with np.errstate(divide='ignore', invalid='ignore'):
+            tanh_Q_safe = np.where(np.abs(tanh_Q) < 1e-15, 1e-15, tanh_Q)
+            prod_others = row_prod / tanh_Q_safe
+        
+        prod_clipped = np.clip(prod_others * syndrome_sign, -CLIP_CHECK_VAL, CLIP_CHECK_VAL)
+        R = np.where(mask, 2.0 * np.arctanh(prod_clipped), 0)
+        
+        R_sum = np.sum(R, axis=0)
+        
+        values = R_sum + initialBelief
+        
+        Q_new = np.where(mask, values - R, 0)
+        
+        Q = damping * Q_new + (1 - damping) * Q_old
+
+        Q = np.clip(Q, -clip_llr, clip_llr)
+        
+        Q_old = Q.copy()
+        
+        candidateError = (values < 0).astype(np.int8)
+        calculateSyndrome = H_sparse.dot(candidateError) % 2
+        
+        if np.array_equal(calculateSyndrome, syndrome):
+            return candidateError, True, values, currentIter
+    
+    return candidateError, False, values, currentIter
+
 def performOSD_enhanced(H, syndrome, llr, hard, order=0, max_combinations=None):
     
     _, n = H.shape

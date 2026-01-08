@@ -83,7 +83,7 @@ for exp in experiment:
 
             syndrome = (error @ code.T) % 2
 
-            detection, isSyndromeFound, llrs, iteration = performBeliefPropagationFast(
+            detection, isSyndromeFound, llrs, iteration = performBeliefPropagation_Symmetric(
                 code, syndrome, initialBeliefs, maxIter=BP_maxIter
             )
             iterations.append(iteration)
