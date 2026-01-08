@@ -2,7 +2,7 @@ import tqdm
 import numpy as np
 import matplotlib.pyplot as plt
 
-from decoding import performBeliefPropagationFast
+from decoding import performBeliefPropagation_Symmetric
 from decoding import performOSD_enhanced
 
 experiment = [
@@ -148,58 +148,58 @@ np.savez("rework/simulation_results.npz", results=results)
 
 colors = ["2E72AE", "64B791", "DBA142", "000000", "E17792"]
 
-# fig, axes = plt.subplots(4, 1, figsize=(6, 8), sharex=True)
-# fig.suptitle(f"Monte Carlo trials: {trials}, BP max iterations: {BP_maxIter}, OSD order: {OSD_order} \n The y-axis shows rates calculated over all trials.")
-# for (code_name, code_results), color in zip(results.items(), colors):
-#     x = list(code_results.keys())
-#     axes[0].loglog(
-#         x,
-#         [v["logical"] for v in code_results.values()],
-#         marker="d",
-#         label=f"Code {code_name}",
-#         color=f"#{color}",
-#     )
-#     axes[1].plot(
-#         x,
-#         [v["osd"] for v in code_results.values()],
-#         marker="o",
-#         label=f"Code {code_name}",
-#         color=f"#{color}",
-#     )
-#     axes[2].plot(
-#         x,
-#         [v["degeneracies"] for v in code_results.values()],
-#         marker="s",
-#         label=f"Code {code_name}",
-#         color=f"#{color}",
-#     )
-#     axes[3].plot(
-#         x,
-#         [v["OSD_invocation_AND_logicalError"] for v in code_results.values()],
-#         marker="^",
-#         label=f"Code {code_name}",
-#         color=f"#{color}",
-#     )
+fig, axes = plt.subplots(4, 1, figsize=(6, 8), sharex=True)
+fig.suptitle(f"Monte Carlo trials: {trials}, BP max iterations: {BP_maxIter}, OSD order: {OSD_order} \n The y-axis shows rates calculated over all trials.")
+for (code_name, code_results), color in zip(results.items(), colors):
+    x = list(code_results.keys())
+    axes[0].loglog(
+        x,
+        [v["logical"] for v in code_results.values()],
+        marker="d",
+        label=f"Code {code_name}",
+        color=f"#{color}",
+    )
+    axes[1].plot(
+        x,
+        [v["osd"] for v in code_results.values()],
+        marker="o",
+        label=f"Code {code_name}",
+        color=f"#{color}",
+    )
+    axes[2].plot(
+        x,
+        [v["degeneracies"] for v in code_results.values()],
+        marker="s",
+        label=f"Code {code_name}",
+        color=f"#{color}",
+    )
+    axes[3].plot(
+        x,
+        [v["OSD_invocation_AND_logicalError"] for v in code_results.values()],
+        marker="^",
+        label=f"Code {code_name}",
+        color=f"#{color}",
+    )
 
-# axes[0].set_ylabel("Logical Error Rate")
-# axes[0].grid(True, which="both", ls="--")
-# axes[0].legend()
+axes[0].set_ylabel("Logical Error Rate")
+axes[0].grid(True, which="both", ls="--")
+axes[0].legend()
 
-# axes[1].set_ylabel("OSD Invocation Rate")
-# axes[1].grid(True, which="both", ls="--")
-# axes[1].legend()
+axes[1].set_ylabel("OSD Invocation Rate")
+axes[1].grid(True, which="both", ls="--")
+axes[1].legend()
 
-# axes[2].set_ylabel("Degenerate Errors Rate")
-# axes[2].grid(True, which="both", ls="--")
-# axes[2].legend()
+axes[2].set_ylabel("Degenerate Errors Rate")
+axes[2].grid(True, which="both", ls="--")
+axes[2].legend()
 
-# axes[3].set_xlabel("Physical Error Rate")
-# axes[3].set_ylabel("OSD Invocation & Error")
-# axes[3].grid(True, which="both", ls="--")
-# axes[3].legend()
+axes[3].set_xlabel("Physical Error Rate")
+axes[3].set_ylabel("OSD Invocation & Error")
+axes[3].grid(True, which="both", ls="--")
+axes[3].legend()
 
-# plt.tight_layout()
-# plt.savefig("rework/logical_error_rates.png", dpi=300)
+plt.tight_layout()
+plt.savefig("rework/SCOPT.png", dpi=300)
 
 # fig2, axes2 = plt.subplots(2, 5, figsize=(15, 8))
 # for i, (code_name, code_results) in enumerate(results.items()):
