@@ -1,7 +1,7 @@
 import tqdm
 import numpy as np
-from scipy.stats import norm
 import matplotlib.pyplot as plt
+from scipy.optimize import curve_fit
 
 from decoding import performBeliefPropagation_Symmetric
 from decoding import performOSD_enhanced
@@ -41,7 +41,7 @@ experiment = [
 
 experiment_dict = {exp["name"]: exp for exp in experiment}
 
-trials = 10000
+trials = 100
 
 BP_maxIter = 50
 OSD_order = 0
@@ -90,11 +90,8 @@ for exp in experiment:
             iterations.append(iteration)
 
             if collect_stats:
-                # We mask the LLRs based on what the bit truly was
-                # llrs corresponding to bits that were 0 (No Error)
                 llr_data[code_name]["true_0"].extend(llrs[error == 0])
                 
-                # llrs corresponding to bits that were 1 (Error)
                 llr_data[code_name]["true_1"].extend(llrs[error == 1])
 
             if not isSyndromeFound:
@@ -148,6 +145,62 @@ for exp in experiment:
 np.savez("rework/simulation_results.npz", results=results)
 
 colors = ["2E72AE", "64B791", "DBA142", "000000", "E17792"]
+
+def calculate_optimal_alpha(llr_data_code, bins=50, plot=False):
+    """
+    Implements the methodology from Alvarado et al. (2009) to find alpha.
+    """
+    # 1. Flatten data
+    L_given_0 = np.array(llr_data_code["true_0"]) # L-values when bit was 0 (syndrome + noise implication)
+    L_given_1 = np.array(llr_data_code["true_1"]) # L-values when bit was 1
+    
+    # 2. Create Histograms (approximate the PDFs p(lambda|0) and p(lambda|1))
+    # We use a shared bin range to ensure alignment
+    min_val = min(L_given_0.min(), L_given_1.min())
+    max_val = max(L_given_0.max(), L_given_1.max())
+    
+    # Avoid outliers skewing the plot
+    min_val = max(min_val, -20)
+    max_val = min(max_val, 20)
+    
+    hist_range = (min_val, max_val)
+    
+    hist_0, bin_edges = np.histogram(L_given_0, bins=bins, range=hist_range, density=True)
+    hist_1, _ = np.histogram(L_given_1, bins=bins, range=hist_range, density=True)
+    
+    bin_centers = (bin_edges[:-1] + bin_edges[1:]) / 2
+    
+    # 3. Calculate the Log Ratio (The correcting function f(lambda))
+    # f(lambda) = log( p(L|1) / p(L|0) )
+    # Handle division by zero or log of zero safely
+    valid_indices = (hist_0 > 0) & (hist_1 > 0)
+    
+    lambdas = bin_centers[valid_indices]
+    f_lambdas = np.log(hist_1[valid_indices] / hist_0[valid_indices])
+    
+    # 4. Fit a line f(lambda) = alpha * lambda
+    # The paper suggests a linear approximation is sufficient [cite: 170]
+    def linear_model(x, alpha):
+        return alpha * x
+    
+    popt, _ = curve_fit(linear_model, lambdas, f_lambdas)
+    alpha_opt = popt[0]
+    
+    if plot:
+        plt.figure(figsize=(8, 4))
+        plt.scatter(lambdas, f_lambdas, label='Empirical $f(\\lambda)$', alpha=0.6)
+        plt.plot(lambdas, linear_model(lambdas, alpha_opt), 'r--', label=f'Fit $\\alpha \\approx {alpha_opt:.3f}$')
+        plt.plot(lambdas, lambdas, 'k:', label=r'Consistency Condition ($\alpha=1$)')
+        plt.xlabel(r'L-value ($\lambda$)')
+        plt.ylabel(r'$\log(p(\lambda|1)/p(\lambda|0))$')
+        plt.title(f'Consistency Plot (Alvarado Method)')
+        plt.legend()
+        plt.grid(True)
+        plt.show()
+        
+    return alpha_opt
+
+calculate_optimal_alpha(llr_data["72"], bins=50, plot=True)
 
 fig, axes = plt.subplots(5, 1, figsize=(6, 10), sharex=True)
 fig.suptitle(f"Monte Carlo trials: {trials}, BP max iterations: {BP_maxIter}, OSD order: {OSD_order} \n The y-axis shows rates calculated over all trials.")
@@ -213,36 +266,3 @@ axes[4].legend()
 
 plt.tight_layout()
 plt.savefig("rework/SCOPT.png", dpi=300)
-
-fig_llr, axes_llr = plt.subplots(len(llr_data), 1, figsize=(10, 4 * len(llr_data)), sharex=False)
-
-if len(llr_data) == 1: axes_llr = [axes_llr] # Handle single plot case
-
-for ax, (code_name, data) in zip(axes_llr, llr_data.items()):
-
-    n, bins, patches = ax.hist(data["true_0"], bins=100, color='blue', alpha=0.5, density=True, label='True 0 (Empirical)')
-    
-    # 2. Generate the Theoretical Red Curve (Gaussian Fit)
-    # Instead of transforming the noisy 'n', we fit a Gaussian to the raw data
-    mu = np.mean(data["true_0"])
-    sigma = np.std(data["true_0"])
-    
-    # Create a smooth x-axis range for the line plot
-    x_range = np.linspace(min(bins), max(bins), 1000)
-    
-    # Theoretical True 1 is the mirror image of True 0:
-    # It should have Mean = -Mean_Blue
-    theoretical_red_gaussian = norm.pdf(x_range, loc=-mu, scale=sigma)
-    
-    ax.plot(x_range, theoretical_red_gaussian, color='darkred', linestyle='--', linewidth=2, label='True 1 (Theoretical Gaussian)')
-    
-    # 3. Plot Empirical Red Histogram (True 1)
-    ax.hist(data["true_1"], bins=100, color='red', alpha=0.3, density=True, label='True 1 (Empirical)')
-
-    ax.set_title(f"LLR Distribution: Code {code_name}")
-    ax.legend()
-    ax.grid(True, alpha=0.3)
-    ax.axvline(0, color='black', linestyle='--', alpha=0.7)
-
-plt.tight_layout()
-plt.savefig("rework/llr_distributionsSCOPT.png", dpi=300)
