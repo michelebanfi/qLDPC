@@ -1,5 +1,6 @@
 import tqdm
 import numpy as np
+from scipy.stats import norm
 import matplotlib.pyplot as plt
 
 from decoding import performBeliefPropagation_Symmetric
@@ -213,95 +214,35 @@ axes[4].legend()
 plt.tight_layout()
 plt.savefig("rework/SCOPT.png", dpi=300)
 
-# fig2, axes2 = plt.subplots(2, 5, figsize=(15, 8))
-# for i, (code_name, code_results) in enumerate(results.items()):
-#     weights_BP = []
-#     weights_OSD = []
-#     for res in code_results.values():
-#         weights_BP.extend(res["weights_found_BP"])
-#         weights_OSD.extend(res["weights_found_OSD"])
-    
-#     if weights_BP:
-#         axes2[0, i].hist(weights_BP, bins=np.arange(0, 30)-0.5, color=f"#{colors[i]}", alpha=0.7)
-#     axes2[0, i].axvline(x=experiment_dict[code_name]['distance'], color='red', linestyle='dashed', label='Code Distance')
-#     axes2[0, i].set_title(f"Code {code_name} (BP)")
-#     axes2[0, i].set_xlabel("Weight")
-#     axes2[0, i].set_ylabel("Frequency")
-    
-#     if weights_OSD:
-#         axes2[1, i].hist(weights_OSD, bins=np.arange(0, 30)-0.5, color=f"#{colors[i]}", alpha=0.7)
-#     axes2[1, i].axvline(x=experiment_dict[code_name]['distance'], color='red', linestyle='dashed', label='Code Distance')
-#     axes2[1, i].set_title(f"Code {code_name} (OSD)")
-#     axes2[1, i].set_xlabel("Weight")
-#     axes2[1, i].set_ylabel("Frequency")
-
-# plt.tight_layout()
-# plt.savefig("rework/weights_histograms.png", dpi=300)
-
-# fig2, axes2 = plt.subplots(2, 5, figsize=(15, 8))
-# for i, (code_name, code_results) in enumerate(results.items()):
-#     weights_BP = []
-#     weights_OSD = []
-#     for res in code_results.values():
-#         weights_BP.extend(res["weights_found_BP_error"])
-#         weights_OSD.extend(res["weights_found_OSD_error"])
-    
-#     if weights_BP:
-#         axes2[0, i].hist(weights_BP, bins=np.arange(0, 30)-0.5, color=f"#{colors[i]}", alpha=0.7)
-#     axes2[0, i].axvline(x=experiment_dict[code_name]['distance'], color='red', linestyle='dashed', label='Code Distance')
-#     axes2[0, i].set_title(f"Code {code_name} (BP)")
-#     axes2[0, i].set_xlabel("Weight")
-#     axes2[0, i].set_ylabel("Frequency")
-    
-#     if weights_OSD:
-#         axes2[1, i].hist(weights_OSD, bins=np.arange(0, 30)-0.5, color=f"#{colors[i]}", alpha=0.7)
-#     axes2[1, i].axvline(x=experiment_dict[code_name]['distance'], color='red', linestyle='dashed', label='Code Distance')
-#     axes2[1, i].set_title(f"Code {code_name} (OSD)")
-#     axes2[1, i].set_xlabel("Weight")
-#     axes2[1, i].set_ylabel("Frequency")
-
-# plt.tight_layout()
-# plt.savefig("rework/weights_histograms_ERROR.png", dpi=300)
-
 fig_llr, axes_llr = plt.subplots(len(llr_data), 1, figsize=(10, 4 * len(llr_data)), sharex=False)
 
 if len(llr_data) == 1: axes_llr = [axes_llr] # Handle single plot case
 
 for ax, (code_name, data) in zip(axes_llr, llr_data.items()):
-    
-    # Plot histogram for bits that were truly 0 (Should be Positive)
-    ax.hist(data["true_0"], bins=100, color='blue', alpha=0.5, density=True, label='True Bit = 0 (No Error)')
-    
-    # Plot histogram for bits that were truly 1 (Should be Negative)
-    ax.hist(data["true_1"], bins=100, color='red', alpha=0.5, density=True, label='True Bit = 1 (Error)')
 
-    ax.set_title(f"LLR Distribution: Code {code_name} (Highest Error Rate)")
-    ax.set_xlabel("Log-Likelihood Ratio (LLR)")
-    ax.set_ylabel("Density")
+    n, bins, patches = ax.hist(data["true_0"], bins=100, color='blue', alpha=0.5, density=True, label='True 0 (Empirical)')
+    
+    # 2. Generate the Theoretical Red Curve (Gaussian Fit)
+    # Instead of transforming the noisy 'n', we fit a Gaussian to the raw data
+    mu = np.mean(data["true_0"])
+    sigma = np.std(data["true_0"])
+    
+    # Create a smooth x-axis range for the line plot
+    x_range = np.linspace(min(bins), max(bins), 1000)
+    
+    # Theoretical True 1 is the mirror image of True 0:
+    # It should have Mean = -Mean_Blue
+    theoretical_red_gaussian = norm.pdf(x_range, loc=-mu, scale=sigma)
+    
+    ax.plot(x_range, theoretical_red_gaussian, color='darkred', linestyle='--', linewidth=2, label='True 1 (Theoretical Gaussian)')
+    
+    # 3. Plot Empirical Red Histogram (True 1)
+    ax.hist(data["true_1"], bins=100, color='red', alpha=0.3, density=True, label='True 1 (Empirical)')
+
+    ax.set_title(f"LLR Distribution: Code {code_name}")
     ax.legend()
     ax.grid(True, alpha=0.3)
-    
-    # Add a vertical line at 0 (The Decision Boundary)
     ax.axvline(0, color='black', linestyle='--', alpha=0.7)
 
 plt.tight_layout()
 plt.savefig("rework/llr_distributionsSCOPT.png", dpi=300)
-
-# plot the average iterations per code and error rate
-# fig_iter, axes_iter = plt.subplots(1, 1, figsize=(8, 6))
-# for (code_name, code_results), color in zip(results.items(), colors):
-#     x = list(code_results.keys())
-#     axes_iter.plot(
-#         x,
-#         [v["average_iterations"] for v in code_results.values()],
-#         marker="o",
-#         label=f"Code {code_name}",
-#         color=f"#{color}",
-#     )
-# axes_iter.set_xlabel("Physical Error Rate")
-# axes_iter.set_ylabel("Average BP Iterations")
-# axes_iter.set_title(f"Average BP Iterations vs Physical Error Rate \n (Monte Carlo trials: {trials}, BP max iterations: {BP_maxIter}, OSD order: {OSD_order})")
-# axes_iter.grid(True, which="both", ls="--")
-# axes_iter.legend()
-# plt.tight_layout()
-# plt.savefig("rework/average_bp_iterations.png", dpi=300)
