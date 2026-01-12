@@ -176,7 +176,7 @@ def calculate_optimal_alpha(llr_data_code, bins=50, plot=False):
     valid_indices = (hist_0 > 0) & (hist_1 > 0)
     
     lambdas = bin_centers[valid_indices]
-    f_lambdas = np.log(hist_1[valid_indices] / hist_0[valid_indices])
+    f_lambdas = np.log(hist_0[valid_indices] / hist_1[valid_indices])
     
     # 4. Fit a line f(lambda) = alpha * lambda
     # The paper suggests a linear approximation is sufficient [cite: 170]
