@@ -11,6 +11,8 @@ def estimate_alpha_from_code(code, trials=1000, error_rate=0.05, maxIter=50, bin
     true_0 = []
     true_1 = []
     
+    edge_rows, edge_cols = np.nonzero(code)
+    
     for _trial in range(trials):
         n = len(code[0])
         initialBeliefs = [np.log((1 - error_rate) / error_rate)] * n
@@ -19,12 +21,16 @@ def estimate_alpha_from_code(code, trials=1000, error_rate=0.05, maxIter=50, bin
 
         syndrome = (error @ code.T) % 2
 
-        detection, isSyndromeFound, llrs, iteration = performBeliefPropagation_Symmetric(
-            code, syndrome, initialBeliefs, maxIter=maxIter, alpha=1.0, damping=1.0, clip_llr=np.inf
+        _ , _, R, _ = performBeliefPropagation_Symmetric(
+            code, syndrome, initialBeliefs, maxIter=maxIter, alpha=1.0, damping=1.0, clip_llr=np.inf, alpha_estimation=True
         )
 
-        true_0.extend(llrs[error == 0])
-        true_1.extend(llrs[error == 1])
+        valid_messages = R[edge_rows, edge_cols]
+
+        corresponding_bit_values = error[edge_cols]
+
+        true_0.extend(valid_messages[corresponding_bit_values == 0])
+        true_1.extend(valid_messages[corresponding_bit_values == 1])
 
     true_0 = np.array(true_0)
     true_1 = np.array(true_1)    
@@ -90,7 +96,7 @@ experiment = [
 
 experiment_dict = {exp["name"]: exp for exp in experiment}
 
-trials = 10000
+trials = 1000
 
 BP_maxIter = 50
 OSD_order = 0
@@ -196,62 +202,6 @@ for exp in experiment:
 np.savez("rework/simulation_results.npz", results=results)
 
 colors = ["2E72AE", "64B791", "DBA142", "000000", "E17792"]
-
-# def calculate_optimal_alpha(llr_data_code, bins=50, plot=False):
-#     """
-#     Implements the methodology from Alvarado et al. (2009) to find alpha.
-#     """
-#     # 1. Flatten data
-#     L_given_0 = np.array(llr_data_code["true_0"]) # L-values when bit was 0 (syndrome + noise implication)
-#     L_given_1 = np.array(llr_data_code["true_1"]) # L-values when bit was 1
-    
-#     # 2. Create Histograms (approximate the PDFs p(lambda|0) and p(lambda|1))
-#     # We use a shared bin range to ensure alignment
-#     min_val = min(L_given_0.min(), L_given_1.min())
-#     max_val = max(L_given_0.max(), L_given_1.max())
-    
-#     # Avoid outliers skewing the plot
-#     min_val = max(min_val, -20)
-#     max_val = min(max_val, 20)
-    
-#     hist_range = (min_val, max_val)
-    
-#     hist_0, bin_edges = np.histogram(L_given_0, bins=bins, range=hist_range, density=True)
-#     hist_1, _ = np.histogram(L_given_1, bins=bins, range=hist_range, density=True)
-    
-#     bin_centers = (bin_edges[:-1] + bin_edges[1:]) / 2
-    
-#     # 3. Calculate the Log Ratio (The correcting function f(lambda))
-#     # f(lambda) = log( p(L|1) / p(L|0) )
-#     # Handle division by zero or log of zero safely
-#     valid_indices = (hist_0 > 0) & (hist_1 > 0)
-    
-#     lambdas = bin_centers[valid_indices]
-#     f_lambdas = np.log(hist_0[valid_indices] / hist_1[valid_indices])
-    
-#     # 4. Fit a line f(lambda) = alpha * lambda
-#     # The paper suggests a linear approximation is sufficient [cite: 170]
-#     def linear_model(x, alpha):
-#         return alpha * x
-    
-#     popt, _ = curve_fit(linear_model, lambdas, f_lambdas)
-#     alpha_opt = popt[0]
-    
-#     if plot:
-#         plt.figure(figsize=(8, 4))
-#         plt.scatter(lambdas, f_lambdas, label='Empirical $f(\\lambda)$', alpha=0.6)
-#         plt.plot(lambdas, linear_model(lambdas, alpha_opt), 'r--', label=f'Fit $\\alpha \\approx {alpha_opt:.3f}$')
-#         plt.plot(lambdas, lambdas, 'k:', label=r'Consistency Condition ($\alpha=1$)')
-#         plt.xlabel(r'L-value ($\lambda$)')
-#         plt.ylabel(r'$\log(p(\lambda|1)/p(\lambda|0))$')
-#         plt.title(f'Consistency Plot (Alvarado Method)')
-#         plt.legend()
-#         plt.grid(True)
-#         plt.show()
-        
-#     return alpha_opt
-
-# calculate_optimal_alpha(llr_data["72"], bins=50, plot=True)
 
 fig, axes = plt.subplots(5, 1, figsize=(6, 10), sharex=True)
 fig.suptitle(f"Monte Carlo trials: {trials}, BP max iterations: {BP_maxIter}, OSD order: {OSD_order} \n The y-axis shows rates calculated over all trials.")
