@@ -6,7 +6,7 @@ from scipy.optimize import curve_fit
 from decoding import performBeliefPropagation_Symmetric
 from decoding import performOSD_enhanced
 
-def estimate_alpha_from_code(code, trials=500, error_rate=0.05, maxIter=50, bins=50):
+def estimate_alpha_from_code(code, trials=1000, error_rate=0.05, maxIter=50, bins=50):
 
     true_0 = []
     true_1 = []
@@ -127,7 +127,7 @@ for exp in experiment:
 
         collect_stats = (errorRate == exp["physicalErrorRates"][0])
 
-        alpha_estimate = estimate_alpha_from_code(code, error_rate=errorRate, maxIter=BP_maxIter)
+        alpha_estimate = estimate_alpha_from_code(code, error_rate=errorRate, maxIter=1)
 
         for _ in tqdm.tqdm(range(trials), desc=f"Code {code_name}, p={errorRate}"):
             error = (np.random.random(n) < errorRate).astype(int)
