@@ -93,7 +93,7 @@ def performBeliefPropagation_Symmetric(H, syndrome, initialBelief, maxIter=50, a
         prod_clipped = np.clip(prod_others * syndrome_sign, -CLIP_CHECK_VAL, CLIP_CHECK_VAL)
         R = np.where(mask, 2.0 * np.arctanh(prod_clipped), 0)
 
-        if alpha_estimation:
+        if alpha_estimation and currentIter == 10:
             return 0, 0, R, 0
 
         R_scaled = R * alpha
@@ -113,7 +113,7 @@ def performBeliefPropagation_Symmetric(H, syndrome, initialBelief, maxIter=50, a
         candidateError = (values < 0).astype(np.int8)
         calculateSyndrome = H_sparse.dot(candidateError) % 2
         
-        if np.array_equal(calculateSyndrome, syndrome):
+        if np.array_equal(calculateSyndrome, syndrome) and not alpha_estimation:
             return candidateError, True, values, currentIter
     
     return candidateError, False, values, currentIter
