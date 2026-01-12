@@ -56,7 +56,7 @@ def performBeliefPropagationFast(H, syndrome, initialBelief, maxIter=50):
     
     return candidateError, False, values, currentIter
 
-def performBeliefPropagation_Symmetric(H, syndrome, initialBelief, maxIter=50, damping=0.8, clip_llr=20.0):
+def performBeliefPropagation_Symmetric(H, syndrome, initialBelief, maxIter=50, alpha=1.0, damping=0.8, clip_llr=20.0):
     """
     BP with Damping and Symmetric Clipping to improve LLR distribution shape.
     
@@ -92,12 +92,14 @@ def performBeliefPropagation_Symmetric(H, syndrome, initialBelief, maxIter=50, d
         
         prod_clipped = np.clip(prod_others * syndrome_sign, -CLIP_CHECK_VAL, CLIP_CHECK_VAL)
         R = np.where(mask, 2.0 * np.arctanh(prod_clipped), 0)
+
+        R_scaled = R * alpha
         
-        R_sum = np.sum(R, axis=0)
+        R_sum = np.sum(R_scaled, axis=0)
         
         values = R_sum + initialBelief
         
-        Q_new = np.where(mask, values - R, 0)
+        Q_new = np.where(mask, values - R_scaled, 0)
         
         Q = damping * Q_new + (1 - damping) * Q_old
 

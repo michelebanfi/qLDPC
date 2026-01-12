@@ -6,6 +6,47 @@ from scipy.optimize import curve_fit
 from decoding import performBeliefPropagation_Symmetric
 from decoding import performOSD_enhanced
 
+def estimate_alpha_from_code(code, trials=500, error_rate=0.05, maxIter=50):
+    
+    for _trial in range(trials):
+        n = len(code[0])
+        initialBeliefs = [np.log((1 - error_rate) / error_rate)] * n
+
+        error = (np.random.random(n) < error_rate).astype(int)
+
+        syndrome = (error @ code.T) % 2
+
+        detection, isSyndromeFound, llrs, iteration = performBeliefPropagation_Symmetric(
+            code, syndrome, initialBeliefs, maxIter=maxIter, alpha=1.0, damping=1.0, clip_llr=np.inf
+        )
+
+        true_0 = llrs[error == 0]
+        true_1 = llrs[error == 1]
+
+        min_val = min(true_0.min(), true_1.min())
+        max_val = max(true_0.max(), true_1.max())
+
+        hist_range = (min_val, max_val)
+
+        hist_0, bin_edges = np.histogram(true_0, bins=bins, range=hist_range, density=True)
+        hist_1, _ = np.histogram(true_1, bins=bins, range=hist_range, density=True)
+        
+        bin_centers = (bin_edges[:-1] + bin_edges[1:]) / 2
+
+        valid_indices = (hist_0 > 0) & (hist_1 > 0)
+    
+        lambdas = bin_centers[valid_indices]
+        f_lambdas = np.log(hist_0[valid_indices] / hist_1[valid_indices])
+        
+        def linear_model(x, alpha):
+            return alpha * x
+        
+        popt, _ = curve_fit(linear_model, lambdas, f_lambdas)
+        alpha_opt = popt[0]
+    
+    return alpha_opt
+        
+
 experiment = [
     {
         "code": "[[72, 12, 6]]",
