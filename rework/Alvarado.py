@@ -151,7 +151,7 @@ for exp in experiment:
             # )
 
             detection, isSyndromeFound, llrs, iteration = performMinSum_Symmetric(
-                code, syndrome, initialBeliefs, maxIter=BP_maxIter, alpha=alpha_estimate, damping=0.8, clip_llr=20
+                code, syndrome, initialBeliefs, maxIter=BP_maxIter, alpha=alpha_estimate, damping=0.7, clip_llr=25
             )
 
             iterations.append(iteration)
