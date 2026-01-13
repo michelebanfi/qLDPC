@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 from scipy.optimize import curve_fit
 
 from decoding import performBeliefPropagation_Symmetric
+from decoding import performMinSum_Symmetric
 from decoding import performOSD_enhanced
 
 def estimate_alpha_from_code(code, trials=5000, error_rate=0.05, maxIter=50, bins=50):
@@ -21,7 +22,11 @@ def estimate_alpha_from_code(code, trials=5000, error_rate=0.05, maxIter=50, bin
 
         syndrome = (error @ code.T) % 2
 
-        _ , _, R, _ = performBeliefPropagation_Symmetric(
+        # _ , _, R, _ = performBeliefPropagation_Symmetric(
+        #     code, syndrome, initialBeliefs, maxIter=maxIter, alpha=1.0, damping=1.0, clip_llr=np.inf, alpha_estimation=True
+        # )
+
+        _ , _, R, _ = performMinSum_Symmetric(
             code, syndrome, initialBeliefs, maxIter=maxIter, alpha=1.0, damping=1.0, clip_llr=np.inf, alpha_estimation=True
         )
 
@@ -96,7 +101,7 @@ experiment = [
 
 experiment_dict = {exp["name"]: exp for exp in experiment}
 
-trials = 10000
+trials = 100
 
 BP_maxIter = 50
 OSD_order = 0
@@ -133,7 +138,7 @@ for exp in experiment:
 
         collect_stats = (errorRate == exp["physicalErrorRates"][0])
 
-        alpha_estimate = estimate_alpha_from_code(code, error_rate=errorRate, maxIter=11)
+        alpha_estimate = estimate_alpha_from_code(code, error_rate=errorRate, maxIter=1)
 
         for _ in tqdm.tqdm(range(trials), desc=f"Code {code_name}, p={errorRate}"):
             error = (np.random.random(n) < errorRate).astype(int)
@@ -141,9 +146,14 @@ for exp in experiment:
             syndrome = (error @ code.T) % 2
 
             # clipping and damping ingnored for now. We need to focus on alpha first.
-            detection, isSyndromeFound, llrs, iteration = performBeliefPropagation_Symmetric(
+            # detection, isSyndromeFound, llrs, iteration = performBeliefPropagation_Symmetric(
+            #     code, syndrome, initialBeliefs, maxIter=BP_maxIter, alpha=alpha_estimate, damping=1.0, clip_llr=np.inf
+            # )
+
+            detection, isSyndromeFound, llrs, iteration = performMinSum_Symmetric(
                 code, syndrome, initialBeliefs, maxIter=BP_maxIter, alpha=alpha_estimate, damping=1.0, clip_llr=np.inf
             )
+
             iterations.append(iteration)
 
             if collect_stats:

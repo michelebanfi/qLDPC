@@ -2,6 +2,100 @@ import numpy as np
 from itertools import combinations
 from scipy.sparse import csr_matrix
 
+def performMinSum_Symmetric(H, syndrome, initialBelief, maxIter=50, alpha=1.0, damping=1.0, clip_llr=20.0, alpha_estimation=False):
+    """
+    Normalized Min-Sum Algorithm.
+    
+    alpha: Scaling factor (usually 0.6 - 0.9 for Min-Sum).
+           alpha=1.0 makes this standard UMP-BP (Min-Sum).
+    """
+    
+    H = np.asarray(H, dtype=np.float64)
+    syndrome = np.asarray(syndrome, dtype=np.int8)
+    initialBelief = np.asarray(initialBelief, dtype=np.float64)
+    
+    H_sparse = csr_matrix(H)
+    mask = H != 0
+    syndrome_sign = (1 - 2 * syndrome).reshape(-1, 1)
+    
+    Q = np.where(mask, initialBelief, 0)
+    Q_old = Q.copy()
+    
+    # Pre-allocate R
+    R = np.zeros_like(Q)
+    
+    for currentIter in range(maxIter):
+        
+        # --- Check Node Update (Min-Sum Approximation) ---
+        
+        # 1. Sign processing
+        sign_Q = np.sign(Q)
+        # Handle 0s in sign: map 0 -> 1 (or random, but 1 is stable)
+        sign_Q = np.where(sign_Q == 0, 1.0, sign_Q)
+        sign_Q = np.where(mask, sign_Q, 1.0)
+        
+        # Product of signs for the whole row
+        row_sign_prod = np.prod(sign_Q, axis=1, keepdims=True)
+        # Sign for message j->i is row_product / sign(j->i)
+        # (Since signs are +/-1, division is same as multiplication)
+        r_signs = row_sign_prod * sign_Q
+        
+        # 2. Magnitude processing
+        abs_Q = np.abs(Q)
+        # We need to find the min absolute value excluding self.
+        # Efficient way: find min1 (absolute min) and min2 (second min) for each row.
+        
+        # Mask 0 entries (non-edges) with infinity so they don't affect min
+        abs_Q_masked = np.where(mask, abs_Q, np.inf)
+        
+        # Find indices of the minimums
+        min1_idx = np.argmin(abs_Q_masked, axis=1)
+        min1_vals = abs_Q_masked[np.arange(abs_Q.shape[0]), min1_idx]
+        
+        # Mask out the first min to find the second min
+        temp_Q = abs_Q_masked.copy()
+        temp_Q[np.arange(abs_Q.shape[0]), min1_idx] = np.inf
+        min2_vals = np.min(temp_Q, axis=1)
+        
+        # Broadcast min1 and min2 back to the matrix shape
+        # If a column was the min1, it takes min2. Otherwise, it takes min1.
+        min1_vals_broad = min1_vals.reshape(-1, 1)
+        min2_vals_broad = min2_vals.reshape(-1, 1)
+        
+        # Check where the input equals the minimum for that row
+        is_min1 = (abs_Q_masked == min1_vals_broad)
+        
+        magnitudes = np.where(is_min1, min2_vals_broad, min1_vals_broad)
+        
+        # 3. Combine and Scale
+        R_new = alpha * syndrome_sign * r_signs * magnitudes
+        R_new = np.where(mask, R_new, 0)
+        
+        # --- End Check Node ---
+        
+        if alpha_estimation:
+             # Return unscaled messages for estimation logic
+            return 0, 0, R_new / alpha, 0
+
+        # Variable Node Update (Same as BP)
+        R_sum = np.sum(R_new, axis=0)
+        values = R_sum + initialBelief
+        Q_new = np.where(mask, values - R_new, 0)
+        
+        # Damping
+        Q = damping * Q_new + (1 - damping) * Q_old
+        Q = np.clip(Q, -clip_llr, clip_llr)
+        Q_old = Q.copy()
+        
+        # Syndrome Check
+        candidateError = (values < 0).astype(np.int8)
+        calculateSyndrome = H_sparse.dot(candidateError) % 2
+        
+        if np.array_equal(calculateSyndrome, syndrome) and not alpha_estimation:
+            return candidateError, True, values, currentIter
+            
+    return candidateError, False, values, currentIter
+
 def performBeliefPropagationFast(H, syndrome, initialBelief, maxIter=50):
     """
     Docstring for performBeliefPropagationFast
